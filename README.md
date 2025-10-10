@@ -2,5 +2,5 @@
 Demandeur : A.Sardellitti
 
 Contributeurs : 
-  -Cloélia TRAN 
-  -Nhat Duc Huy HO
+  - Cloélia TRAN 
+  - Nhat Duc Huy HO
