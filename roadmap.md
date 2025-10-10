@@ -6,14 +6,14 @@
 ---
 
 ## 🧩 Problématique
-Dans quelle mesure la **classe énergétique (DPE)** influence-t-elle les **consommations électriques moyennes** des studios situés à **Lyon** et **Lille**, puis selon le **type de logement** (neuf / ancien) ?
+Dans quelle mesure la **classe énergétique (DPE)** influence-t-elle les **consommations électriques moyennes** des studios situés à **Lyon** et **Lille** selon le **type de logement** (neuf / ancien) ?
 
 ---
 
 ## 🎯 Objectifs du projet
 
 1. **Comparer** les consommations électriques moyennes des studios selon leur **classe DPE** entre Lyon et Lille.  
-2. **Identifier** les différences **climatiques** et **typologiques** entre les deux villes pouvant expliquer les écarts observés.  
+2. **Identifier** les différences **climatiques** entre les deux villes pouvant expliquer les écarts observés.  
 3. **Visualiser** les résultats sous forme de **KPI**, **graphiques interactifs** et **cartes** à l’aide de l’application **R Shiny**.  
 4. **Modéliser** une **régression simple** entre la consommation et la classe énergétique, illustrée par un **boxplot**.
 
@@ -21,8 +21,8 @@ Dans quelle mesure la **classe énergétique (DPE)** influence-t-elle les **cons
 
 ## 🧠 Méthodologie
 - Données issues des **API ADEME** :
-  - [DPE logements neufs](https://data.ademe.fr/datasets/dpe-v2-logements-neufs)
-  - [DPE logements existants](https://data.ademe.fr/datasets/dpe-v2-logements-existants)
+  - [DPE logements neufs](https://data.ademe.fr/datasets/dpe02neuf)
+  - [DPE logements existants](https://data.ademe.fr/datasets/dpe03existant)
 - Filtrage des **logements de type studio** localisés à **Lyon (69)** et **Lille (59)**.  
 - Calcul et comparaison des **consommations moyennes (kWh/m².an)** par **classe DPE**.  
 - Analyse statistique et **visualisation** sous **R Markdown** et **R Shiny**.  
