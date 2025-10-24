@@ -1,12 +1,12 @@
-# Étude du DPE et des consommations électriques de logements type studio à Lyon vs Lille
+# Étude du DPE et des consommations électriques de logements type appartement à Lyon vs Lille
 
 ## 🎯 Titre du projet
-**Analyse comparative des consommations électriques selon le DPE des studios à Lyon et Lille**
+**Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille**
 
 ---
 
 ## 🧩 Problématique
-Dans quelle mesure la **classe énergétique (DPE)** influence-t-elle les **consommations électriques moyennes** des studios situés à **Lyon** et **Lille** selon le **type de logement** (neuf / ancien) ?
+Dans quelle mesure la **classe énergétique (DPE)** influence-t-elle les **consommations électriques moyennes** des logements type appartement situés à **Lyon** et **Lille** selon le **type de logement** (neuf / ancien) ?
 
 ---
 
