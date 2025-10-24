@@ -1,4 +1,4 @@
-# Étude du DPE et des consommations électriques de logements type appartement à Lyon vs Lille 2023-2025
+# Étude du DPE et des consommations électriques de logements type appartement à Lyon vs Lille
 
 ## 🎯 Titre du projet
 **Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille**
