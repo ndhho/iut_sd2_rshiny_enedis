@@ -12,14 +12,14 @@ get_data = function(base_url,code_postal) {
   df = data.frame()
   
   #--- Colonnes ---
-  colonnes = "type_batiment,periode_construction,etiquette_dpe,etiquette_ges,surface_habitable_logement,classe_inertie_batiment,code_postal_ban,adresse_ban,code_insee_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,type_energie_n1,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
+  colonnes = "type_batiment,periode_construction,etiquette_dpe,etiquette_ges,surface_habitable_logement,classe_inertie_batiment,code_postal_ban,code_insee_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,type_energie_n1,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
   #--- BOUCLE SUR LES CODES POSTAUX 69 ---
   for(code in code_postal){
     # Requête générale
     params = list(
       size = 10000,
       select = colonnes,
-      qs = glue("code_postal_ban:{code} AND type_batiment:appartement")
+      qs = glue("code_postal_ban:{code} AND type_batiment:appartement AND type_energie_principale_chauffage:Électricité AND type_energie_principale_ecs:Électricité")
     )
     url_encoded = modify_url(base_url, query = params)
     response = GET(url_encoded)
@@ -94,3 +94,8 @@ df_neufs_59$flag = "neuf"
 df_existants_69$flag = "existant"
 df_neufs_69$flag = "neuf"
 
+logements_69 = rbind(df_existants_69, df_neufs_69)
+logements_59 = rbind(df_existants_59, df_neufs_59)
+
+write.csv2(logements_69, file = "logements_69.csv",row.names = FALSE, fileEncoding = "UTF-8")
+write.csv2(logements_59, file = "logements_59.csv",row.names = FALSE, fileEncoding = "UTF-8")
