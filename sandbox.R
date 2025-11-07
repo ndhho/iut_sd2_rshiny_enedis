@@ -87,3 +87,10 @@ df_neufs_69 = get_data(base_url_neufs,code_postal_69)
 
 df_existants_59 = get_data(base_url_existants,code_postal_59)
 df_neufs_59 = get_data(base_url_neufs,code_postal_59)
+
+df_existants_59$flag = "existant"
+df_neufs_59$flag = "neuf"
+
+df_existants_69$flag = "existant"
+df_neufs_69$flag = "neuf"
+
