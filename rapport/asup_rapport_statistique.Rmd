@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE) #prout
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille
@@ -25,73 +25,88 @@ url_lille <- "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/main
 data_lyon <- read.csv2(url_lyon, header = TRUE)
 data_lille <- read.csv2(url_lille, header = TRUE)
 ```
-```{r kpi_calcul_direct, message=FALSE, warning=FALSE,echo=FALSE}
+```{r kpi_calcul_direct,echo=FALSE}
 #Pour télécharger les packages, il faut décommenter la ligne ci-dessous.
 #install.packages(c("tidyr", "dplyr"), repos = "https://cloud.r-project.org/")
 library(dplyr)
 library(tidyr)
 ```
-### ✅ KPI 1 : Consommation moyenne par logement et par classe DPE
+### 1️⃣ KPI 1 : Consommation moyenne par logement et par classe DPE
+
+```{r kpi1, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+# Je calcule mon KPI ici pour Lyon et pour Lille
 kpi1_lyon <- data_lyon %>%
-  group_by(flag, etiquette_dpe) %>%
+  group_by(flag, etiquette_dpe) %>% #Je group by flag car c'est le logement et la classe DPE qui m'intéressent pour ce KPI
   summarise(conso_moyenne = mean(cout_total_5_usages, na.rm = TRUE))
+
 kpi1_lille <- data_lille %>%
   group_by(flag, etiquette_dpe) %>%
   summarise(conso_moyenne = mean(cout_total_5_usages, na.rm = TRUE))
-kpi1_lyon
-kpi1_lille
 
-### ✅ KPI 2 : Consommation moyenne au m²
+#J'utilise cat() pour écrire mes deux titres, puis
+#print(knitr::kable()) pour afficher mes deux tables proprement
+
+cat("#### Résultats pour Lyon\n")
+print(knitr::kable(kpi1_lyon, caption = "Consommation moyenne par DPE à Lyon"))
+
+#Espace pour séparer les deux tables
+cat("\n\n") 
+
+cat("#### Résultats pour Lille\n")
+print(knitr::kable(kpi1_lille, caption = "Consommation moyenne par DPE à Lille"))
+
+#Interprétation du KPI 1
+cat("\n\n") 
+cat("**Interprétation :** On remarque que pour les deux villes, la consommation moyenne augmente logiquement avec la dégradation de la classe DPE (de A vers G). En revanche, les logements de Lille semblent consommer systématiquement moins que ceux de Lyon, à classe DPE et type de logement (neuf/existant) équivalents.")
+```
+
+### 2️⃣ KPI 2 : Consommation moyenne au m²
+
+```{r kpi2, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+# --- 1. Calcul des KPI ---
+# On calcule la consommation au m² avant de faire la moyenne
 kpi2_lyon <- data_lyon %>%
   mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
   group_by(flag, etiquette_dpe) %>%
   summarise(conso_m2_moy = mean(conso_m2, na.rm = TRUE))
+
 kpi2_lille <- data_lille %>%
   mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
   group_by(flag, etiquette_dpe) %>%
   summarise(conso_m2_moy = mean(conso_m2, na.rm = TRUE))
-kpi2_lyon
-kpi2_lille
 
-### ✅ KPI 3 : Écart de consommation entre logements neufs et existants
+cat("#### Résultats pour Lyon\n")
+print(knitr::kable(kpi2_lyon, caption = "Consommation moyenne au m² à Lyon"))
+
+cat("\n\n") 
+
+cat("#### Résultats pour Lille\n")
+print(knitr::kable(kpi2_lille, caption = "Consommation moyenne au m² à Lille"))
+
+#Interprétation
+cat("\n\n") 
+cat("**Interprétation :** On remarque que pour nos deux villes, nous avons une consommation moyenne au m² assez similaire, que cela soit en fonction du type de logement, ou en fonction du DPE. En revanche, les logements de type neuf avec un DPE A à B à Lille semblent avoir une consommation moyenne au m² plus importante qu'à Lyon.")
+```
+
+### 3️⃣ KPI 3 : Écart de consommation entre logements neufs et existants
+
+```{r kpi3, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+#Ce calcul dépend des objets kpi1_lyon et kpi1_lille créés dans notr premier bloc KPI1
 kpi3_lyon <- kpi1_lyon %>%
   pivot_wider(names_from = flag, values_from = conso_moyenne) %>%
   mutate(ecart_neuf_existant = neuf - existant)
+
 kpi3_lille <- kpi1_lille %>%
   pivot_wider(names_from = flag, values_from = conso_moyenne) %>%
   mutate(ecart_neuf_existant = neuf - existant)
-kpi3_lyon
-kpi3_lille
 
-### ✅ KPI 4 : Classe DPE moyenne par ville
-dpe_levels <- data.frame(etiquette_dpe = c("A","B","C","D","E","F","G"),
-                         dpe_score = 1:7)
-data_lyon_dpe <- left_join(data_lyon, dpe_levels, by = "etiquette_dpe")
-data_lille_dpe <- left_join(data_lille, dpe_levels, by = "etiquette_dpe")
-kpi4_lyon <- mean(data_lyon_dpe$dpe_score, na.rm = TRUE)
-kpi4_lille <- mean(data_lille_dpe$dpe_score, na.rm = TRUE)
-kpi4_lyon
-kpi4_lille
+cat("#### Résultats pour Lyon\n")
+print(knitr::kable(kpi3_lyon, caption = "Écart de consommation Neuf vs Existant (Lyon)"))
 
-### ✅ KPI 5 : Répartition des logements par classe DPE
-kpi5_lyon <- data_lyon %>%
-  count(etiquette_dpe) %>%
-  mutate(pourcentage = 100 * n / sum(n))
-kpi5_lille <- data_lille %>%
-  count(etiquette_dpe) %>%
-  mutate(pourcentage = 100 * n / sum(n))
-kpi5_lyon
-kpi5_lille
+cat("\n\n") 
 
-### ✅ KPI 6 : Ratio de consommation Lyon / Lille pour chaque DPE
-kpi6_lyon <- data_lyon %>%
-  group_by(etiquette_dpe) %>%
-  summarise(conso_moy = mean(cout_total_5_usages, na.rm = TRUE))
-kpi6_lille <- data_lille %>%
-  group_by(etiquette_dpe) %>%
-  summarise(conso_moy = mean(cout_total_5_usages, na.rm = TRUE))
-kpi6_ratio <- left_join(kpi6_lyon, kpi6_lille, by = "etiquette_dpe",
-                        suffix = c("_lyon", "_lille")) %>%
-  mutate(ratio_lyon_lille = conso_moy_lyon / conso_moy_lille)
-kpi6_ratio
-```
+cat("#### Résultats pour Lille\n")
+print(knitr::kable(kpi3_lille, caption = "Écart de consommation Neuf vs Existant (Lille)"))
+
+#Interprétation
+cat("**Interprétation :** Un écart négatif signifie que les logements neufs consomment moins que les logements existants pour une même classe DPE. [ÉCRIVEZ VOTRE ANALYSE ICI, par exemple : 'On observe que l'écart est particulièrement marqué pour les classes F et G...']")
