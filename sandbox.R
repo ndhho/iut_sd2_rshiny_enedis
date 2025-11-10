@@ -29,7 +29,6 @@ get_data = function(base_url,code_postal) {
       
       # Récupération du total
       total_logements = content$total
-      print(glue("Code postal {code} → total = {total_logements}"))
       
       # Si total <= 10 000, on ajoute directement
       if(total_logements <= 10000){
@@ -68,8 +67,9 @@ get_data = function(base_url,code_postal) {
   return(df)}
 
 #--- GITHUB URL POUR LES FICHIERS CSV ---
-file_path_69_csv = "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/refs/heads/main/codepostal_59_69/adresses_69.csv"
-file_path_59_csv = "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/refs/heads/main/codepostal_59_69/adresses_59.csv"
+
+file_path_69_csv = "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/refs/heads/main/data/codepostal_59_69/adresses_69.csv"
+file_path_59_csv = "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/refs/heads/main/data/codepostal_59_69/adresses_59.csv"
 
 #--- LOAD DATAFRAME AVEC LES FICHIERS ---
 df_adresse69 = read.csv(file = file_path_69_csv, header = TRUE, sep = ";", dec = ".")
