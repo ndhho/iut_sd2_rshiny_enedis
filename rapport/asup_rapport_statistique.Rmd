@@ -1,1 +1,97 @@
+---
+title: "Etude du DPE et des consommations électriques de logements type appartements à Lyon vs Lille"
+author: "HO Huy, TRAN Cloélia"
+date: "2025-11-16"
+output: html_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille
+
+La performance énergétique d’un logement, mesurée par le Diagnostic de Performance Énergétique (DPE), constitue un indicateur clé de sa consommation d’énergie.
+
+Dans le cadre de ce projet, il s’agira d’analyser dans quelle mesure la classe énergétique influence les consommations électriques moyennes des appartements situés à Lyon et Lille, en distinguant les logements neufs des logements anciens.
+
+À partir de données réelles sur les DPE et les consommations, l’objectif est de mettre en évidence les écarts de performance selon le type de bâti et la localisation, à l’aide d’analyses statistiques et de visualisations produites avec R.
+
+```{r import_data, echo=FALSE}
+url_lyon <- "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/main/data/clean_csv/logements_69.csv"
+url_lille <- "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/main/data/clean_csv/logements_59.csv"
+
+# Import des données
+data_lyon <- read.csv2(url_lyon, header = TRUE)
+data_lille <- read.csv2(url_lille, header = TRUE)
+```
+```{r kpi_calcul_direct, message=FALSE, warning=FALSE,echo=FALSE}
+#Pour télécharger les packages, il faut décommenter la ligne ci-dessous.
+#install.packages(c("tidyr", "dplyr"), repos = "https://cloud.r-project.org/")
+library(dplyr)
+library(tidyr)
+```
+### ✅ KPI 1 : Consommation moyenne par logement et par classe DPE
+kpi1_lyon <- data_lyon %>%
+  group_by(flag, etiquette_dpe) %>%
+  summarise(conso_moyenne = mean(cout_total_5_usages, na.rm = TRUE))
+kpi1_lille <- data_lille %>%
+  group_by(flag, etiquette_dpe) %>%
+  summarise(conso_moyenne = mean(cout_total_5_usages, na.rm = TRUE))
+kpi1_lyon
+kpi1_lille
+
+### ✅ KPI 2 : Consommation moyenne au m²
+kpi2_lyon <- data_lyon %>%
+  mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
+  group_by(flag, etiquette_dpe) %>%
+  summarise(conso_m2_moy = mean(conso_m2, na.rm = TRUE))
+kpi2_lille <- data_lille %>%
+  mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
+  group_by(flag, etiquette_dpe) %>%
+  summarise(conso_m2_moy = mean(conso_m2, na.rm = TRUE))
+kpi2_lyon
+kpi2_lille
+
+### ✅ KPI 3 : Écart de consommation entre logements neufs et existants
+kpi3_lyon <- kpi1_lyon %>%
+  pivot_wider(names_from = flag, values_from = conso_moyenne) %>%
+  mutate(ecart_neuf_existant = neuf - existant)
+kpi3_lille <- kpi1_lille %>%
+  pivot_wider(names_from = flag, values_from = conso_moyenne) %>%
+  mutate(ecart_neuf_existant = neuf - existant)
+kpi3_lyon
+kpi3_lille
+
+### ✅ KPI 4 : Classe DPE moyenne par ville
+dpe_levels <- data.frame(etiquette_dpe = c("A","B","C","D","E","F","G"),
+                         dpe_score = 1:7)
+data_lyon_dpe <- left_join(data_lyon, dpe_levels, by = "etiquette_dpe")
+data_lille_dpe <- left_join(data_lille, dpe_levels, by = "etiquette_dpe")
+kpi4_lyon <- mean(data_lyon_dpe$dpe_score, na.rm = TRUE)
+kpi4_lille <- mean(data_lille_dpe$dpe_score, na.rm = TRUE)
+kpi4_lyon
+kpi4_lille
+
+### ✅ KPI 5 : Répartition des logements par classe DPE
+kpi5_lyon <- data_lyon %>%
+  count(etiquette_dpe) %>%
+  mutate(pourcentage = 100 * n / sum(n))
+kpi5_lille <- data_lille %>%
+  count(etiquette_dpe) %>%
+  mutate(pourcentage = 100 * n / sum(n))
+kpi5_lyon
+kpi5_lille
+
+### ✅ KPI 6 : Ratio de consommation Lyon / Lille pour chaque DPE
+kpi6_lyon <- data_lyon %>%
+  group_by(etiquette_dpe) %>%
+  summarise(conso_moy = mean(cout_total_5_usages, na.rm = TRUE))
+kpi6_lille <- data_lille %>%
+  group_by(etiquette_dpe) %>%
+  summarise(conso_moy = mean(cout_total_5_usages, na.rm = TRUE))
+kpi6_ratio <- left_join(kpi6_lyon, kpi6_lille, by = "etiquette_dpe",
+                        suffix = c("_lyon", "_lille")) %>%
+  mutate(ratio_lyon_lille = conso_moy_lyon / conso_moy_lille)
+kpi6_ratio
+```
