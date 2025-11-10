@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE) #prout
 ```
 
 ## Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille
