@@ -1,0 +1,330 @@
+---
+title: Etude du DPE et des consommations électriques de logements type appartements à Lyon vs Lille
+author: "HO Huy, TRAN Cloélia"
+date: "16-11-2025"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Installation des packages
+# install.packages(c("tidyr", "dplyr", "ggplot2", "scales"), repos = "[https://cloud.r-project.org/](https://cloud.r-project.org/)")
+```
+
+```{r library,echo=FALSE, message=FALSE, warning=FALSE} 
+#On choisi d'utiliser message=FALSE et warning=FALSE pour que la page s'affiche proprement sans les messages de chargements de library ou les warnings.
+
+# Charger les librairies nécessaires pour l'analyse
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales) # Pour les labels en %
+```
+
+
+```{r import_data, echo=FALSE}
+url_lyon <- "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/main/data/clean_csv/logements_69.csv"
+url_lille <- "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/main/data/clean_csv/logements_59.csv"
+
+# Import des données
+data_lyon <- read.csv2(url_lyon, header = TRUE)
+data_lille <- read.csv2(url_lille, header = TRUE)
+```
+
+```{r combine_data, echo=FALSE}
+#Ajout de la colonne Ville et combinaison des données
+data_lyon <- data_lyon %>% mutate(Ville = "Lyon")
+data_lille <- data_lille %>% mutate(Ville = "Lille")
+
+#Combinaison des deux jeux de données pour les analyses comparatives des deux villes
+data_combined_raw <- rbind(data_lyon, data_lille)
+```
+
+```{r combine_data_pie, echo=FALSE}
+# Préparation les données pour le graphique circulaire
+
+data_pour_pie <- data_combined_raw %>%
+  filter(!is.na(Ville) & !is.na(flag)) %>% # S'assurer qu'on n'a pas de NA sur les villes ou le flag
+  
+  # Regrouper tout ce qui N'EST PAS 'Électricité'
+  mutate(
+    energie_focus = if_else(
+      type_energie_principale_chauffage == "Électricité", 
+      "Électricité", 
+      "Autres Energies"))
+
+# Calculer les pourcentages pour chaque camembert
+data_pie <- data_pour_pie %>%
+  # Compter les occurrences pour chaque groupe
+  group_by(Ville, flag, energie_focus) %>%
+  summarise(n = n(), .groups = 'drop') %>%
+  
+  # Calculer la proportion de 'n' par rapport au total de chaque groupe
+  group_by(Ville, flag) %>%
+  mutate(
+    total_groupe = sum(n),
+    proportion = n / total_groupe) %>%
+  
+  # Ordonner pour que les labels se placent bien
+  arrange(Ville, flag, desc(energie_focus))
+```
+
+## Introduction : Contexte de l'étude
+
+#### Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille
+
+La performance énergétique d’un logement, mesurée par le Diagnostic de Performance Énergétique (DPE), constitue un indicateur clé de sa consommation d’énergie.
+
+Dans le cadre de ce projet, il s’agira d’analyser dans quelle mesure la classe énergétique influence les consommations électriques moyennes des appartements situés à Lyon et Lille, en distinguant les logements neufs des logements anciens.
+
+À partir de données réelles sur les DPE et les consommations, l’objectif est de mettre en évidence les écarts de performance selon le type de logement et la localisation, à l’aide d’analyses statistiques et de visualisations produites avec R.
+
+-----
+
+### 1\. Répartition des Étiquettes DPE pour Lyon et Lille
+
+```{r etiquette_dpe, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+# Compter le nombre de logements par DPE et par Ville
+data_dpe_counts <- data_combined_raw %>%
+  mutate(etiquette_dpe = factor(etiquette_dpe, levels = c("A", "B", "C", "D", "E", "F", "G"))) %>%
+  filter(!is.na(etiquette_dpe)) %>% # Retirer les DPE manquants si existants
+  group_by(Ville) %>%
+  mutate(Total_Ville = n()) %>% # Calculer le total par ville (pour le %)
+  group_by(Ville, etiquette_dpe, Total_Ville) %>%
+  summarise(
+    Nombre = n(), 
+    Proportion = Nombre / first(Total_Ville), # Calculer la proportion
+    .groups = 'drop'
+  )
+
+#création du graphique
+ggplot(data_dpe_counts, 
+       aes(x = etiquette_dpe, y = Proportion, fill = Ville)) +
+  # utilisation de position_dodge pour mettre les diagrammes en barres côte à côte
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  
+  #Ajout des proportions (en %) au-dessus des barres
+  geom_text(
+    aes(label = scales::percent(Proportion, accuracy = 0.1)), 
+    position = position_dodge(width = 0.9),
+    vjust = -0.5, #position  verticale du texte
+    size = 3
+  ) +
+  
+  labs(
+    title = "Répartition des étiquettes DPE (Lyon vs. Lille)",
+    x = "Classe DPE",
+    y = "Proportion des logements (%)",
+    fill = "Ville"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c("Lyon" = "#5C8EDB", "Lille" = "#FFF9D6")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Ce graphique nous montre que la classe C représente la plus grande proportion de logements à Lyon et à Lille. En revanche, on observe que Lille possède plus de logements classés D, E, F que Lyon, ce qui pourrait signaler un défi plus important de rénovation énergétique à Lille.
+
+L'analyse montre aussi l'ensemble des logements de Lille présente un **taux de passoires** (F+G) de 8.3% légèrement supérieur à celui de Lyon (7.6%). Cet écart, combiné à une plus forte proportion de classes D et E à Lille, confirme un défi de rénovation énergétique légèrement plus important dans la métropole du Nord.
+
+-----
+
+## 2\. Part de l'électricité dans le chauffage
+
+Notre étude se concentre sur les consommations *électriques*. Nous vérifions donc la part de cette énergie dans le chauffage principal des deux villes.
+
+```{r camembert, echo=FALSE}
+ggplot(data_pie, aes(x = "", y = proportion, fill = energie_focus)) +
+  
+  # geom_bar(stat="identity") car on a déjà calculé les proportions
+  geom_bar(stat = "identity", width = 1) +
+  
+  # Transforme les barres en camembert
+  coord_polar(theta = "y", start = 0) +
+  
+  # Créer les 4 graphiques (Lyon/Lille x Neuf/Existant)
+  facet_grid(Ville ~ flag) +
+  
+  # Ajouter les étiquettes des données
+  geom_text(
+    aes(label = percent(proportion, accuracy = 1)), 
+    position = position_stack(vjust = 0.5),
+    color = "white", 
+    size = 4        
+  ) +
+  
+  # Surligner l'électricité
+  scale_fill_manual(
+    values = c("Électricité" = "#FFA500", "Autres Energies" = "#AAAAAA"),
+    name = "Source d'énergie"
+  ) +
+  
+  # Nettoyer le fond du graphique
+  theme_void() +
+  
+  # Ajouter les titres et ajuster le thème
+  labs(
+    title = "Focus sur la part de l'électricité dans le chauffage principal",
+    subtitle = "Répartition du d'énergie principale utilisée pour le chauffage Lyon vs Lille (Neuf vs Existant)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "bottom",
+    # Remettre les titres que theme_void() enlève
+    strip.text = element_text(face = "bold", size = 10) 
+  )
+```
+
+**Intrerprétation :** L’ensemble des appartements **existants** à Lyon et à Lille présentent une situation identique en matière de chauffage électrique : dans chacune des deux villes, **36 %** des logements existants utilisent l’électricité comme source principale de chauffage.
+
+Si l’ensemble des appartements existants sont identiques, les constructions **neuves** montrent un net recul de cette énergie. Cette tendance est plus forte à Lille, où la part de l'électricité chute à 27%, contre 30% à Lyon. Cela suggère que les nouvelles constructions s'orientent davantage vers d'autres solutions (gaz, réseaux de chaleur) pour répondre aux normes de performance.
+
+-----
+
+## 3\. Coût total moyen par m² (Logements Existants)
+
+Nous comparons maintenant le coût énergétique *total* (tous usages, toutes énergies) pour les logements existants.
+
+```{r conso_moy_m2, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+# On calcule la consommation au m² avant de faire la moyenne
+kpi2_lyon <- data_lyon %>%
+  filter(flag == "existant") %>%
+  mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
+  group_by(flag, etiquette_dpe) %>%
+  summarise(conso_m2_moy = mean(conso_m2, na.rm = TRUE))
+
+kpi2_lille <- data_lille %>%
+  filter(flag == "existant") %>%
+  mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
+  group_by(flag, etiquette_dpe) %>%
+  summarise(conso_m2_moy = mean(conso_m2, na.rm = TRUE))
+
+cat("#### Résultats pour Lyon\n")
+print(knitr::kable(kpi2_lyon, caption = "Consommation Énergétique Moyenne par m² (Logements Existants) à Lyon"))
+
+cat("\n\n") 
+
+cat("#### Résultats pour Lille\n")
+print(knitr::kable(kpi2_lille, caption = "Consommation Énergétique Moyenne par m² (Logements Existants) à Lille"))
+```
+
+```{r data_conso_moy_m2, include=FALSE}
+# Combinaison des KPI 2 de Lyon et Lille
+data_combined_kpi2 <- rbind(
+  kpi2_lyon %>% mutate(Ville = "Lyon"),
+  kpi2_lille %>% mutate(Ville = "Lille")
+)
+data_combined_kpi2 %>% filter(flag == "existant")
+```
+
+```{r graph_conso_moy_m2, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+# Graphique : Diagramme en barres groupées avec facette par Ville
+ggplot(data_combined_kpi2, aes(x = etiquette_dpe, y = conso_m2_moy)) +
+  
+  geom_bar(stat = "identity", fill = "#D55E00") + 
+  
+  geom_text(aes(label = round(conso_m2_moy, 2)), 
+            vjust = -0.5, size = 2.5) +
+  facet_wrap(~ Ville) + 
+  labs(
+    title = "Consommation Énergétique Moyenne par m² (Logements Existants)", 
+    x = "Classe DPE",
+    y = "Coût Moyen par m² (€/m²)"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+**Interprétation : ** Le graphique illustre la forte corrélation entre le DPE et le coût au m². De manière surprenante, bien que le climat de Lille soit plus rigoureux, le coût moyen d'un appartement 'G' existant est plus élevé à Lyon (49,09 €/m²) qu'à Lille (44,41 €/m²). En revanche, les coûts pour la classe 'F' sont presque identiques dans les deux villes (environ 31,36 €/m²)
+
+-----
+
+## 4\. Coût du chauffage ÉLECTRIQUE par m² (Logements Existants)
+
+L'analyse précédente mélangeait toutes les énergies. Nous isolons maintenant les **36% d'appartements existants chauffés à l'électricité** pour comparer leur coût de *chauffage* au m².
+
+```{r data_cout_moy_elec, echo=FALSE, message=FALSE, warning=FALSE, fig.width=10}
+# 1. On filtre les données
+data_elec_existant <- data_combined_raw %>%
+  filter(
+    flag == "existant", 
+    type_energie_principale_chauffage == "Électricité"
+  )
+
+# 2. On calcule le coût de chauffage moyen par DPE et Ville
+kpi4_data <- data_elec_existant %>%
+  group_by(Ville, etiquette_dpe) %>%
+  summarise(
+    # On utilise conso_m2_chauffage (le coût de chauffage seul)
+    conso_m2_chauffage_moy = mean(cout_chauffage, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  # On retire les lignes où le calcul a échoué (NA/Inf)
+  filter(is.finite(conso_m2_chauffage_moy))
+
+# 3. On calcule la hauteur max pour l'axe Y
+max_y_elec <- max(kpi4_data$conso_m2_chauffage_moy, na.rm = TRUE) * 1.1
+```
+
+```{r graph_cout_moy_elec, echo=FALSE, message=FALSE, warning=FALSE, fig.width=10}
+# 4. Création du graphique
+ggplot(kpi4_data, aes(x = etiquette_dpe, y = conso_m2_chauffage_moy)) +
+  # Une nouvelle couleur pour ce graphique
+  geom_bar(stat = "identity", fill = "#0072B2") + 
+  
+  # Ajout des étiquettes de données
+  geom_text(
+    aes(label = round(conso_m2_chauffage_moy, 2)), 
+    vjust = -0.5, 
+    size = 3, 
+    color = "black"
+  ) +
+  
+  facet_wrap(~ Ville) + 
+  
+  # On ajuste l'axe Y pour la lisibilité
+  scale_y_continuous(limits = c(0, max_y_elec)) +
+  
+  labs(
+    title = "Coût du Chauffage ÉLECTRIQUE par m² (Logements Existants)",
+    subtitle = "Comparaison pour les appartements où l'électricité est le chauffage principal",
+    x = "Classe DPE",
+    y = "Coût Chauffage Électrique Moyen (€/m²)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5)
+  )
+```
+
+------
+
+### Interprétation des coûts du chauffage électrique
+
+L'analyse ciblée du coût moyen de chauffage au m² pour les appartements existants chauffés à l'électricité fournit deux enseignements majeurs.
+
+#### 1. Une corrélation claire entre DPE et coût
+
+Le graphique confirme une **corrélation positive très nette** entre l'étiquette DPE et le coût moyen du chauffage électrique. Pour les deux métropoles, la tendance est univoque : à mesure que la performance énergétique se dégrade (de A vers G), le coût s'accroît de manière exponentielle.
+
+-----
+
+#### 2. Un constat surprenant : Lyon plus coûteuse que Lille
+
+Le résultat principal de cette analyse est contraire aux attentes initiales. Malgré un climat continental plus rigoureux à Lille (nécessitant théoriquement plus de chauffage), le coût moyen du chauffage électrique pour les "passoires thermiques" (classes F et G) est **systématiquement plus élevé à Lyon**.
+
+* Pour la **classe G**, le coût moyen lyonnais atteint **1396,13 €/m²**, contre **1311,33 €/m²** à Lille.
+* L'écart est encore plus significatif pour la **classe F**, où Lyon affiche un coût de **1038,35 €/m²** contre **904,48 €/m²** à Lille, soit un surcoût d'environ 15 %.
+* Cette tendance d'un coût supérieur à Lyon se vérifie pour toutes les classes de D à G.
+
+-----
+
+#### 3. Conclusion et Hypothèses
+
+L’idée selon laquelle *un climat plus froid entraîne forcément une facture plus élevée* ne se vérifie pas ici. Le coût moyen supérieur observé à Lyon laisse penser que, pour les logements chauffés à l’électricité, **la qualité moyenne du bâti** (isolation, ponts thermiques, ancienneté ou type de chauffage électrique) est sans doute moindre à Lyon qu’à Lille, notamment dans les classes énergétiques les plus faibles.
+
+**Note méthodologique** : Les coûts moyens dépassant 1300 €/m² pour la classe G sont très élevés et probablement influencés par des valeurs extrêmes (outliers). Malgré cela, selon la moyenne, Lyon reste la ville présentant les coûts les plus élevés pour les classes F et G.
