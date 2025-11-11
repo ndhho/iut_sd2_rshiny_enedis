@@ -8,6 +8,7 @@ library(scales)  # Pour les pourcentages
 library(leaflet) # Pour la carte interactive
 library(DT)      # Pour afficher des tables (bonus)
 library(sf)
+library(shinythemes)
 
 # --- 2. PRÉPARATION DES DONNÉES (GLOBAL) ---
 print("Chargement des librairies... OK")
@@ -85,10 +86,11 @@ ui <- dashboardPage(
       menuItem("Contexte", tabName = "contexte", icon = icon("info-circle")),
       menuItem("Overview (Carte & KPIs)", tabName = "overview", icon = icon("dashboard")),
       menuItem("Analyse DPE", tabName = "analyse_dpe", icon = icon("chart-bar")),
-      menuItem("Analyse des Coûts", tabName = "analyse_couts", icon = icon("euro-sign"))
+      menuItem("Analyse des Coûts", tabName = "analyse_couts", icon = icon("euro-sign")),
+      menuItem("Analyse Statistique", tabName = "analyse_extra", icon = icon("search-plus"))
     ),
     
-    # Widgets de filtrage (pour répondre au cahier des charges)
+    # Widgets de filtrage
     hr(), # Ligne de séparation
     
     selectInput("ville_filter", "Choisir la/les ville(s):",
@@ -104,11 +106,23 @@ ui <- dashboardPage(
                 min = 10, max = 500,
                 value = c(10, 500)),
     numericInput("sample_size", "Nb. de points sur la carte (max 5000):",
-                 value = 1000, min = 100, max = 5000, step = 100)
+                 value = 1000, min = 100, max = 5000, step = 100),
+    
+    hr(), # Une autre ligne de séparation
+    div(style="padding-left: 15px; padding-right: 15px;", # Un peu de style
+        downloadButton(
+          "download_data_csv", 
+          "Exporter les données (.csv)",
+          class = "btn-block" # Fait que le bouton prend toute la largeur
+        )
+    )
   ),
-  
+    
   # --- CORPS DE L'APPLICATION (BODY) ---
   dashboardBody(
+    
+    themeSelector(),
+    
     tabItems(
       
       # --- Onglet 1 : Contexte ---
@@ -135,17 +149,17 @@ ui <- dashboardPage(
                       style = "display: flex; justify-content: space-around; align-items: center; padding: 20px;",
                       
                       # Logo 1 : ENEDIS
-                      tags$img(src = "logo_enedis.jpg",
+                      tags$img(src = "https://github.com/ndhho/iut_sd2_rshiny_enedis/blob/main/app/www/logo_enedis.jpg?raw=true",
                                title = "ENEDIS",
                                height = "70px"),  # Ajustez la hauteur
                       
                       # Logo 2 : ADEME
-                      tags$img(src = "logo_ademe.png",
+                      tags$img(src = "https://github.com/ndhho/iut_sd2_rshiny_enedis/blob/main/app/www/logo_ademe.png?raw=true",
                                title = "ADEME",
                                height = "70px"),
                       
                       # Logo 3 : IUT
-                      tags$img(src = "logo_iut.png", 
+                      tags$img(src = "https://github.com/ndhho/iut_sd2_rshiny_enedis/blob/main/app/www/logo_iut.png?raw=true", 
                                title = "Logo École",
                                height = "70px"),
                       
@@ -200,6 +214,27 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "Coût du Chauffage ÉLECTRIQUE par m²", width = 12, status = "primary", solidHeader = TRUE,
                     plotOutput("plot_cost_elec_m2") # Sortie pour le graphique Rmd 4
+                )
+              )
+      ),
+      # --- Onglet 5 : Analyse Exploratoire ---
+      tabItem(tabName = "analyse_extra",
+              h2("Analyse Statistique"),
+              
+              # LIGNE 1 : Histogramme et Boîte à moustaches
+              fluidRow(
+                box(title = "Histogramme : Distribution des coûts au m²", width = 6, status = "primary", solidHeader = TRUE,
+                    plotOutput("plot_histogram")
+                ),
+                box(title = "Boîte à moustaches : Coût au m² par DPE", width = 6, status = "primary", solidHeader = TRUE,
+                    plotOutput("plot_boxplot")
+                )
+              ),
+              
+              # LIGNE 2 : Nuage de points
+              fluidRow(
+                box(title = "Nuage de points : Surface vs Coût total", width = 12, status = "primary", solidHeader = TRUE,
+                    plotOutput("plot_scatter")
                 )
               )
       )
@@ -370,7 +405,7 @@ server <- function(input, output, session) {
       labs(title = "Répartition des étiquettes DPE",
            x = "Classe DPE", y = "Proportion des logements (%)") +
       scale_y_continuous(labels = scales::percent) +
-      scale_fill_manual(values = c("Lyon" = "#0047AB", "Lille" = "#E69F00")) +
+      scale_fill_manual(values = c("Lyon" = "#5C8EDB", "Lille" = "#FFE9D6")) +
       theme_minimal() +
       theme(plot.title = element_text(hjust = 0.5))
   })
@@ -474,7 +509,26 @@ server <- function(input, output, session) {
             plot.subtitle = element_text(hjust = 0.5))
   })
   
-
+# --- G. Logique pour le téléchargement des données ---
+  
+  output$download_data_csv <- downloadHandler(
+    
+    # Nom du fichier qui sera téléchargé
+    filename = function() {
+      paste0("donnees_dpe_filtrees-", Sys.Date(), ".csv")
+    },
+    
+    # Logique pour créer le fichier
+    content = function(file) {
+      # 'write.csv2' est meilleur pour les CSV français (utilise des ';')
+      write.csv2(
+        data_filtered(), # Utilise vos données réactives !
+        file, 
+        row.names = FALSE,
+        fileEncoding = "UTF-8" # Important pour les accents
+      )
+    }
+  )
 # --- E. Logique pour l'onglet 'Contexte' ---
 
   output$table_echantillon <- renderDT({
@@ -504,6 +558,83 @@ server <- function(input, output, session) {
       )
     )
   })
+  
+  # --- F. Logique pour l'onglet 'Analyse Exploratoire' ---
+  
+  # 1. Histogramme
+  output$plot_histogram <- renderPlot({
+    
+    data_plot <- data_filtered()
+    
+    # Sécurité : Gérer le cas où il n'y a pas de données
+    if (nrow(data_plot) == 0) {
+      return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
+    
+    ggplot(data_plot, aes(x = conso_m2_total)) +
+      # geom_histogram est le graphique "histogramme"
+      geom_histogram(aes(y = ..density..), bins = 30, fill = "#0072B2", color = "white", alpha = 0.7) +
+      geom_density(color = "red", size = 1) + # Ajoute une ligne de densité
+      facet_wrap(~ Ville, scales = "free_y") +
+      labs(
+        title = "Distribution du Coût total au m² (Logements Existants)",
+        x = "Coût Moyen par m² (€/m²)",
+        y = "Densité"
+      ) +
+      theme_minimal()
+  })
+  
+  # 2. Boîte à moustaches
+  output$plot_boxplot <- renderPlot({
+    
+    data_plot <- data_filtered() %>% filter(flag == "existant")
+    
+    if (nrow(data_plot) == 0) {
+      return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
+    
+    ggplot(data_plot, aes(x = etiquette_dpe, y = conso_m2_total, fill = etiquette_dpe)) +
+      # geom_boxplot est le graphique "boîte à moustaches"
+      geom_boxplot() +
+      scale_y_log10(labels = scales::dollar_format(suffix = "€")) + # Axe Y en log pour la lisibilité
+      facet_wrap(~ Ville) +
+      labs(
+        title = "Distribution du Coût total au m² par DPE (Logements Existants)",
+        x = "Classe DPE",
+        y = "Coût Moyen par m² (log10)"
+      ) +
+      theme_minimal() +
+      theme(legend.position = "none") # Pas besoin de légende si l'axe X est clair
+  })
+  
+  # 3. Nuage de points
+  output$plot_scatter <- renderPlot({
+    
+    # On utilise data_map() qui est DÉJÀ ÉCHANTILLONNÉ (très important pour la performance)
+    data_plot <- data_map()
+    
+    if (nrow(data_plot) == 0) {
+      return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
+    
+    ggplot(data_plot, aes(x = surface_habitable_logement, y = cout_total_5_usages, color = etiquette_dpe)) +
+      # geom_point est le graphique "nuage de points"
+      geom_point(alpha = 0.5) +
+      
+      # On utilise la même palette de couleurs que la carte
+      scale_color_manual(values = dpe_colors, name = "DPE") +
+      
+      scale_y_log10(labels = scales::dollar_format(suffix = "€")) +
+      facet_wrap(~ Ville) +
+      labs(
+        title = paste("Surface vs Coût Total (Échantillon de", nrow(data_plot), "logements)"),
+        x = "Surface Habitable (m²)",
+        y = "Coût Total 5 Usages (log10)"
+      ) +
+      theme_minimal() +
+      guides(color = guide_legend(override.aes = list(alpha = 1, size = 5))) # Rendre la légende visible
+  })
+  
 }
 # --- 5. LANCEMENT DE L'APPLICATION ---
 shinyApp(ui = ui, server = server)
