@@ -135,19 +135,20 @@ ui <- dashboardPage(
                       style = "display: flex; justify-content: space-around; align-items: center; padding: 20px;",
                       
                       # Logo 1 : ENEDIS
-                      tags$img(src = "logo_enedis.png", # Doit correspondre au nom dans /www
+                      tags$img(src = "logo_enedis.jpg",
                                title = "ENEDIS",
-                               height = "70px"),      # Ajustez la hauteur
+                               height = "70px"),  # Ajustez la hauteur
                       
                       # Logo 2 : ADEME
                       tags$img(src = "logo_ademe.png",
                                title = "ADEME",
                                height = "70px"),
                       
-                      # Logo 3 : Votre École
-                      tags$img(src = "logo_ecole.png", 
+                      # Logo 3 : IUT
+                      tags$img(src = "logo_iut.png", 
                                title = "Logo École",
-                               height = "70px")
+                               height = "70px"),
+                      
                     )
                 )
               )
