@@ -1,12 +1,17 @@
 ---
-title: "Etude du DPE et des consommations électriques de logements type appartements à Lyon vs Lille"
+title: Etude du DPE et des consommations électriques de logements type appartements
+  à Lyon vs Lille
 author: "HO Huy, TRAN Cloélia"
 date: "2025-11-16"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+install.packages(c("tidyr", "dplyr","ggplot2"), repos = "https://cloud.r-project.org/")
+#Les library dont on aura besoin plus tard s'installent ici.
 ```
 
 ## Analyse comparative des consommations électriques selon le DPE des logements type appartement à Lyon et Lille
@@ -25,11 +30,13 @@ url_lille <- "https://raw.githubusercontent.com/ndhho/iut_sd2_rshiny_enedis/main
 data_lyon <- read.csv2(url_lyon, header = TRUE)
 data_lille <- read.csv2(url_lille, header = TRUE)
 ```
-```{r kpi_calcul_direct,echo=FALSE}
-#Pour télécharger les packages, il faut décommenter la ligne ci-dessous.
-#install.packages(c("tidyr", "dplyr"), repos = "https://cloud.r-project.org/")
+```{r library,echo=FALSE, message=FALSE, warning=FALSE}
+#Je choisis d'utiliser message=FALSE et warning=FALSE pour que la page s'affiche proprement sans les messages de chargements de library ou les warnings.
+
 library(dplyr)
+#cette library me servira notamment pour les fonctions group_by(), summarise() et mutate() 
 library(tidyr)
+#pour le kpi3 et transformer les valeurs de la colonnes flag en deux colonnes distinctes (neuf et existant)
 ```
 ### 1️⃣ KPI 1 : Consommation moyenne par logement et par classe DPE
 
@@ -43,13 +50,12 @@ kpi1_lille <- data_lille %>%
   group_by(flag, etiquette_dpe) %>%
   summarise(conso_moyenne = mean(cout_total_5_usages, na.rm = TRUE))
 
-#J'utilise cat() pour écrire mes deux titres, puis
-#print(knitr::kable()) pour afficher mes deux tables proprement
+#J'utilise cat() pour écrire mes deux titres, puis print(knitr::kable()) pour afficher mes deux tables proprement
 
 cat("#### Résultats pour Lyon\n")
 print(knitr::kable(kpi1_lyon, caption = "Consommation moyenne par DPE à Lyon"))
 
-#Espace pour séparer les deux tables
+#Espace pour séparer les deux tables et que ce soit + lisible
 cat("\n\n") 
 
 cat("#### Résultats pour Lille\n")
@@ -57,13 +63,38 @@ print(knitr::kable(kpi1_lille, caption = "Consommation moyenne par DPE à Lille"
 
 #Interprétation du KPI 1
 cat("\n\n") 
-cat("**Interprétation :** On remarque que pour les deux villes, la consommation moyenne augmente logiquement avec la dégradation de la classe DPE (de A vers G). En revanche, les logements de Lille semblent consommer systématiquement moins que ceux de Lyon, à classe DPE et type de logement (neuf/existant) équivalents.")
+cat("**Interprétation :** frgtrbfvz")
+```
+
+### Représentation graphique KPI 1
+
+```{r graph1, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+#Préparation des données pour le graphique 1, sachant que j'utilise aussi les KPI 1
+data_combined_kpi1 <- rbind(
+  kpi1_lyon %>% mutate(Ville = "Lyon"),
+  kpi1_lille %>% mutate(Ville = "Lille")
+)
+
+#Graphique 1 : Consommation Moyenne par DPE et Ville
+ggplot(data_combined_kpi1, 
+       aes(x = etiquette_dpe, y = conso_moyenne, fill = Ville)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  # Une facette par type de logement (neuf/existant) pour un graphique plus riche
+  facet_wrap(~ flag) + 
+  labs(
+    title = "Consommation Moyenne Totale par DPE, Ville et Type de Logement",
+    x = "Classe DPE",
+    y = "Coût Total des 5 Usages Moyen (€)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("Lyon" = "#0047AB", "Lille" = "#FFA500"))
 ```
 
 ### 2️⃣ KPI 2 : Consommation moyenne au m²
 
 ```{r kpi2, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
-# --- 1. Calcul des KPI ---
 # On calcule la consommation au m² avant de faire la moyenne
 kpi2_lyon <- data_lyon %>%
   mutate(conso_m2 = cout_total_5_usages / surface_habitable_logement) %>%
@@ -88,6 +119,30 @@ cat("\n\n")
 cat("**Interprétation :** On remarque que pour nos deux villes, nous avons une consommation moyenne au m² assez similaire, que cela soit en fonction du type de logement, ou en fonction du DPE. En revanche, les logements de type neuf avec un DPE A à B à Lille semblent avoir une consommation moyenne au m² plus importante qu'à Lyon.")
 ```
 
+### Représentation graphique KPI 2
+
+```{r graph2, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+# Combinaison des KPI 2 de Lyon et Lille
+data_combined_kpi2 <- rbind(
+  kpi2_lyon %>% mutate(Ville = "Lyon"),
+  kpi2_lille %>% mutate(Ville = "Lille")
+)
+
+# Graphique : Diagramme en barres groupées avec facette par Ville
+ggplot(data_combined_kpi2, 
+       aes(x = etiquette_dpe, y = conso_m2_moy, fill = flag)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  facet_wrap(~ Ville) + 
+  labs(
+    title = "Consommation Énergétique Moyenne par m² (Neuf vs Existant)",
+    x = "Classe DPE",
+    y = "Coût Moyen par m² (€/m²)",
+    fill = "Type de Logement"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
 ### 3️⃣ KPI 3 : Écart de consommation entre logements neufs et existants
 
 ```{r kpi3, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
@@ -109,4 +164,31 @@ cat("#### Résultats pour Lille\n")
 print(knitr::kable(kpi3_lille, caption = "Écart de consommation Neuf vs Existant (Lille)"))
 
 #Interprétation
-cat("**Interprétation :** Un écart négatif signifie que les logements neufs consomment moins que les logements existants pour une même classe DPE. [ÉCRIVEZ VOTRE ANALYSE ICI, par exemple : 'On observe que l'écart est particulièrement marqué pour les classes F et G...']")
+cat("**Interprétation :** A terminer quand le pb avec les valeurs similaires sera réglé")
+```
+
+### Représentation graphique KPI 3
+
+```{r graph3, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5}
+# Combinaison des données brutes Lyon et Lille
+data_combined_raw <- rbind(
+  data_lyon %>% mutate(Ville = "Lyon"),
+  data_lille %>% mutate(Ville = "Lille")
+)
+
+# Graphique : Boxplots (Boîtes à moustaches)
+ggplot(data_combined_raw, 
+       aes(x = etiquette_dpe, y = surface_habitable_logement)) +
+  # Utilisez geom_boxplot pour la distribution
+  geom_boxplot(aes(fill = flag), alpha = 0.7) +
+  # Facette par Ville pour comparaison
+  facet_wrap(~ Ville) + 
+  labs(
+    title = "Distribution de la Surface Habitable par Classe DPE",
+    x = "Classe DPE",
+    y = "Surface Habitable (m²)",
+    fill = "Type de Logement"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```

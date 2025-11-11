@@ -7,19 +7,23 @@ library(glue)
 library(lubridate)
 library(dplyr)
 
-get_data = function(base_url,code_postal) {
+# Colonnes valides pour dpe03existant
+colonnes_existants = "type_batiment,etiquette_dpe,etiquette_ges,surface_habitable_logement,code_postal_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
+
+# Colonnes valides pour dpe02neuf
+colonnes_neufs = "type_batiment,etiquette_dpe,etiquette_ges,surface_habitable_logement,code_postal_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
+
+get_data = function(base_url,code_postal, colonnes) {
   #--- INITIALISATION DATAFRAME ---
   df = data.frame()
   
-  #--- Colonnes ---
-  colonnes = "type_batiment,periode_construction,etiquette_dpe,etiquette_ges,surface_habitable_logement,classe_inertie_batiment,code_postal_ban,code_insee_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,type_energie_n1,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
   #--- BOUCLE SUR LES CODES POSTAUX 69 ---
   for(code in code_postal){
     # Requête générale
     params = list(
       size = 10000,
       select = colonnes,
-      qs = glue("code_postal_ban:{code} AND type_batiment:appartement AND type_energie_principale_chauffage:Électricité AND type_energie_principale_ecs:Électricité")
+      qs = glue("code_postal_ban:{code} AND type_batiment:appartement AND type_energie_principale_chauffage:Électricité")
     )
     url_encoded = modify_url(base_url, query = params)
     response = GET(url_encoded)
@@ -80,13 +84,13 @@ code_postal_69 = unique(df_adresse69$code_postal)
 code_postal_59 = unique(df_adresse59$code_postal)
 
 base_url_existants = "https://data.ademe.fr/data-fair/api/v1/datasets/dpe03existant/lines"
-base_url_neufs = "https://data.ademe.fr/data-fair/api/v1/datasets/dpe03existant/lines"
+base_url_neufs     = "https://data.ademe.fr/data-fair/api/v1/datasets/dpe02neuf/lines"
 
-df_existants_69 = get_data(base_url_existants,code_postal_69)
-df_neufs_69 = get_data(base_url_neufs,code_postal_69)
+df_existants_69 = get_data(base_url_existants,code_postal_69,colonnes_existants)
+df_neufs_69 = get_data(base_url_neufs,code_postal_69,colonnes_neufs)
 
-df_existants_59 = get_data(base_url_existants,code_postal_59)
-df_neufs_59 = get_data(base_url_neufs,code_postal_59)
+df_existants_59 = get_data(base_url_existants,code_postal_59,colonnes_existants)
+df_neufs_59 = get_data(base_url_neufs,code_postal_59,colonnes_neufs)
 
 df_existants_59$flag = "existant"
 df_neufs_59$flag = "neuf"
