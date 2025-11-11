@@ -7,11 +7,8 @@ library(glue)
 library(lubridate)
 library(dplyr)
 
-# Colonnes valides pour dpe03existant
-colonnes_existants = "type_batiment,etiquette_dpe,etiquette_ges,surface_habitable_logement,code_postal_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
-
-# Colonnes valides pour dpe02neuf
-colonnes_neufs = "type_batiment,etiquette_dpe,etiquette_ges,surface_habitable_logement,code_postal_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
+# Colonnes valides pour dpe03existant et dpe02neufs
+colonnes = "type_batiment,etiquette_dpe,etiquette_ges,surface_habitable_logement,code_postal_ban,code_departement_ban,coordonnee_cartographique_x_ban,coordonnee_cartographique_y_ban,cout_total_5_usages,type_energie_principale_chauffage,type_energie_principale_ecs,cout_chauffage"
 
 get_data = function(base_url,code_postal, colonnes) {
   #--- INITIALISATION DATAFRAME ---
