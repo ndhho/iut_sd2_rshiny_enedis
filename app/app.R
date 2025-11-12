@@ -106,16 +106,8 @@ ui <- dashboardPage(
                 min = 10, max = 500,
                 value = c(10, 500)),
     numericInput("sample_size", "Nb. de points sur la carte (max 5000):",
-                 value = 1000, min = 100, max = 5000, step = 100),
-    
-    hr(), # Une autre ligne de séparation
-    div(style="padding-left: 15px; padding-right: 15px;", # Un peu de style
-        downloadButton(
-          "download_data_csv", 
-          "Exporter les données (.csv)",
-          class = "btn-block" # Fait que le bouton prend toute la largeur
-        )
-    )
+                 value = 1000, min = 100, max = 5000, step = 100)
+
   ),
     
   # --- CORPS DE L'APPLICATION (BODY) ---
@@ -140,7 +132,11 @@ ui <- dashboardPage(
                 box(title = "Aperçu des données (échantillon)", width = 12, status = "info", solidHeader = TRUE,
                     h4("Un échantillon aléatoire de 100 lignes est affiché ci-dessous."),
                     # 'DT' est la version 'Shiny' de 'datatable'
-                    DTOutput("table_echantillon")
+                    DTOutput("table_echantillon"),
+                    footer = downloadButton(
+                      "download_table_csv", 
+                      "Télécharger la sélection du tableau (.csv)"
+                    )
                 ),
                 box(title = "Partenaires et Remerciements", width = 12, status = "info",
                     
@@ -193,12 +189,14 @@ ui <- dashboardPage(
               h2("Performance DPE et Sources d'Énergie"),
               fluidRow(
                 box(title = "Répartition des étiquettes DPE", width = 12, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_dpe_repartition") # Sortie pour le graphique Rmd 1
+                    plotOutput("plot_dpe_repartition"),
+                    footer = downloadButton("download_graph_1", "Exporter en .png")
                 )
               ),
               fluidRow(
                 box(title = "Focus sur la part de l'électricité", width = 12, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_pie_chart") # Sortie pour le graphique Rmd 2
+                    plotOutput("plot_pie_chart"),
+                    footer = downloadButton("download_graph_2", "Exporter en .png")
                 )
               )
       ),
@@ -208,12 +206,14 @@ ui <- dashboardPage(
               h2("Analyse des Coûts au m² (Logements Existants)"),
               fluidRow(
                 box(title = "Coût Énergétique Total Moyen par m²", width = 12, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_cost_total_m2") # Sortie pour le graphique Rmd 3
+                    plotOutput("plot_cost_total_m2"),
+                    footer = downloadButton("download_graph_3", "Exporter en .png")
                 )
               ),
               fluidRow(
                 box(title = "Coût du Chauffage ÉLECTRIQUE par m²", width = 12, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_cost_elec_m2") # Sortie pour le graphique Rmd 4
+                    plotOutput("plot_cost_elec_m2"),
+                    footer = downloadButton("download_graph_4", "Exporter en .png")
                 )
               )
       ),
@@ -224,17 +224,20 @@ ui <- dashboardPage(
               # LIGNE 1 : Histogramme et Boîte à moustaches
               fluidRow(
                 box(title = "Histogramme : Distribution des coûts au m²", width = 6, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_histogram")
+                    plotOutput("plot_histogram"),
+                    footer = downloadButton("download_graph_5", "Exporter en .png")
                 ),
                 box(title = "Boîte à moustaches : Coût au m² par DPE", width = 6, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_boxplot")
+                    plotOutput("plot_boxplot"),
+                    footer = downloadButton("download_graph_6", "Exporter en .png")
                 )
               ),
               
               # LIGNE 2 : Nuage de points
               fluidRow(
                 box(title = "Nuage de points : Surface vs Coût total", width = 12, status = "primary", solidHeader = TRUE,
-                    plotOutput("plot_scatter")
+                    plotOutput("plot_scatter"),
+                    footer = downloadButton("download_graph_7", "Exporter en .png")
                 )
               )
       )
@@ -261,7 +264,7 @@ server <- function(input, output, session) {
   
   # --- B. Logique pour l'onglet 'Overview' ---
   
-  # --- Définitions globales pour la carte (exécutées une fois) ---
+
   
   # 1. Palette de couleurs (Vert -> Rouge)
   dpe_colors <- c("#28a745", "#a0c22c", "#fff33b", "#f8d432", "#f2a822", "#f08024", "#d7191c")
@@ -281,7 +284,7 @@ server <- function(input, output, session) {
   }
   
   
-  # --- Fin des définitions globales ---
+
   
   
   # --- Rendu des KPIs ---
@@ -384,9 +387,10 @@ server <- function(input, output, session) {
   
   # --- C. Logique pour l'onglet 'Analyse DPE' ---
   
-  # Graphique 1 : Répartition DPE (basé sur le Rmd)
-  output$plot_dpe_repartition <- renderPlot({
-    
+  # --- GRAPHIQUE 1 : Répartition DPE ---
+  
+  # 1. Isoler le code du graphique dans un reactive()
+  reactive_plot_dpe <- reactive({
     data_plot <- data_filtered() %>%
       group_by(Ville) %>%
       mutate(Total_Ville = n()) %>%
@@ -394,6 +398,10 @@ server <- function(input, output, session) {
       summarise(Nombre = n(), 
                 Proportion = Nombre / first(Total_Ville),
                 .groups = 'drop')
+    
+    if (nrow(data_plot) == 0) {
+      return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
     
     ggplot(data_plot, aes(x = etiquette_dpe, y = Proportion, fill = Ville)) +
       geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
@@ -405,14 +413,27 @@ server <- function(input, output, session) {
       labs(title = "Répartition des étiquettes DPE",
            x = "Classe DPE", y = "Proportion des logements (%)") +
       scale_y_continuous(labels = scales::percent) +
-      scale_fill_manual(values = c("Lyon" = "#5C8EDB", "Lille" = "#FFE9D6")) +
+      scale_fill_manual(values = c("Lyon" = "#0047AB", "Lille" = "#E69F00")) +
       theme_minimal() +
       theme(plot.title = element_text(hjust = 0.5))
   })
   
-  # Graphique 2 : Camemberts (basé sur le Rmd)
-  output$plot_pie_chart <- renderPlot({
-    
+  # 2. Le renderPlot appelle le reactive
+  output$plot_dpe_repartition <- renderPlot({
+    reactive_plot_dpe()
+  })
+  
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_1 <- downloadHandler(
+    filename = function() { "repartition_dpe.png" },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_dpe(), device = "png", width = 10, height = 6)
+    })
+  
+  # --- GRAPHIQUE 2 : Camemberts ---
+  
+  # 1. Isoler le code du graphique
+  reactive_plot_pie <- reactive({
     data_pie_reactive <- data_filtered() %>%
       mutate(
         energie_focus = if_else(
@@ -427,6 +448,10 @@ server <- function(input, output, session) {
       mutate(total_groupe = sum(n),
              proportion = n / total_groupe) %>%
       arrange(Ville, flag, desc(energie_focus))
+    
+    if (nrow(data_pie_reactive) == 0) {
+      return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
     
     ggplot(data_pie_reactive, aes(x = "", y = proportion, fill = energie_focus)) +
       geom_bar(stat = "identity", width = 1) +
@@ -446,18 +471,36 @@ server <- function(input, output, session) {
             strip.text = element_text(face = "bold", size = 10))
   })
   
+  # 2. Le renderPlot appelle le reactive
+  output$plot_pie_chart <- renderPlot({
+    reactive_plot_pie()
+  })
+  
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_2 <- downloadHandler(
+    filename = function() { "part_Électricité.png" },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_pie(), device = "png", width = 8, height = 7)
+    }
+  )
+  
   
   # --- D. Logique pour l'onglet 'Analyse des Coûts' ---
   
-  # Graphique 3 : Coût total m² (basé sur le Rmd)
-  output$plot_cost_total_m2 <- renderPlot({
-    
+  # --- GRAPHIQUE 3 : Coût total m² ---
+  
+  # 1. Isoler le code du graphique
+  reactive_plot_cost_total <- reactive({
     data_plot <- data_filtered() %>%
       filter(flag == "existant") %>%
       group_by(Ville, etiquette_dpe) %>%
       summarise(conso_m2_moy = mean(conso_m2_total, na.rm = TRUE),
                 .groups = 'drop') %>%
       filter(is.finite(conso_m2_moy) & conso_m2_moy > 0)
+    
+    if (nrow(data_plot) == 0) {
+      return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
     
     ggplot(data_plot, aes(x = etiquette_dpe, y = conso_m2_moy)) +
       geom_bar(stat = "identity", fill = "#D55E00") + 
@@ -471,13 +514,25 @@ server <- function(input, output, session) {
       theme(plot.title = element_text(hjust = 0.5))
   })
   
-  # Graphique 4 : Coût chauffage ÉLECTRIQUE m² (basé sur le Rmd)
-  output$plot_cost_elec_m2 <- renderPlot({
-    
+  # 2. Le renderPlot appelle le reactive
+  output$plot_cost_total_m2 <- renderPlot({
+    reactive_plot_cost_total()
+  })
+  
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_3 <- downloadHandler(
+    filename = function() { "cout_total_m2.png" },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_cost_total(), device = "png", width = 10, height = 6)
+    }
+  )
+  
+  # 1. Isoler le code du graphique
+  reactive_plot_cost_elec <- reactive({
     data_plot <- data_filtered() %>%
       filter(
         flag == "existant", 
-        type_energie_principale_chauffage == "Électricité"
+        type_energie_principale_chauffage == "Électricité" # (Nom corrigé)
       ) %>%
       group_by(Ville, etiquette_dpe) %>%
       summarise(
@@ -486,7 +541,6 @@ server <- function(input, output, session) {
       ) %>%
       filter(is.finite(conso_m2_chauffage_moy) & conso_m2_chauffage_moy > 0)
     
-    # Gérer le cas où il n'y a pas de données
     if (nrow(data_plot) == 0) {
       return(ggplot() + labs(title = "Pas de données pour cette sélection"))
     }
@@ -509,32 +563,23 @@ server <- function(input, output, session) {
             plot.subtitle = element_text(hjust = 0.5))
   })
   
-# --- G. Logique pour le téléchargement des données ---
+  # 2. Le renderPlot appelle le reactive
+  output$plot_cost_elec_m2 <- renderPlot({
+    reactive_plot_cost_elec()
+  })
   
-  output$download_data_csv <- downloadHandler(
-    
-    # Nom du fichier qui sera téléchargé
-    filename = function() {
-      paste0("donnees_dpe_filtrees-", Sys.Date(), ".csv")
-    },
-    
-    # Logique pour créer le fichier
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_4 <- downloadHandler(
+    filename = function() { "cout_elec_m2.png" },
     content = function(file) {
-      # 'write.csv2' est meilleur pour les CSV français (utilise des ';')
-      write.csv2(
-        data_filtered(), # Utilise vos données réactives !
-        file, 
-        row.names = FALSE,
-        fileEncoding = "UTF-8" # Important pour les accents
-      )
+      ggsave(file, plot = reactive_plot_cost_elec(), device = "png", width = 10, height = 6)
     }
   )
-# --- E. Logique pour l'onglet 'Contexte' ---
-
-  output$table_echantillon <- renderDT({
+  
+  echantillon_reactive <- reactive({
     
     # Prendre 100 lignes au hasard dans la BDD complète (avant filtres)
-    echantillon <- data_combined %>%
+    data_combined %>%
       sample_n(100) %>%
       # Sélectionner les colonnes les plus pertinentes à montrer
       select(
@@ -546,35 +591,66 @@ server <- function(input, output, session) {
         cout_total_5_usages,
         type_energie_principale_chauffage
       )
+  })
+# --- E. Logique pour l'onglet 'Contexte' ---
+
+  output$table_echantillon <- renderDT({
     
-    # Afficher le datatable
     datatable(
-      echantillon,
+      echantillon_reactive(), # Utilise le reactive
       rownames = FALSE,
+      filter = 'top',
+      
       options = list(
-        pageLength = 5, # N'afficher que 5 lignes à la fois
-        scrollX = TRUE, # Permettre le scroll horizontal si trop de colonnes
-        dom = "tp"      # N'afficher que la table et la pagination ('t' et 'p')
+        scrollX = TRUE, 
+        dom = "tp"      # Garde votre mise en page (table + pagination)
       )
     )
   })
   
+  output$download_table_csv <- downloadHandler(
+    
+    filename = function() {
+      paste0("echantillon_dpe_filtre-", Sys.Date(), ".csv")
+    },
+    
+    content = function(file) {
+      
+      # 1. Récupérer l'échantillon de 100 lignes d'origine
+      data_originale <- echantillon_reactive()
+      
+      # 2. Récupérer les indices des lignes qui sont VISIBLES
+      #    (après que l'utilisateur ait utilisé les filtres 'top')
+      indices_filtres <- input$table_echantillon_rows_all
+      
+      # 3. Filtrer les données d'origine avec ces indices
+      data_a_telecharger <- data_originale[indices_filtres, ]
+      
+      # 4. Écrire le CSV
+      write.csv2(
+        data_a_telecharger, 
+        file, 
+        row.names = FALSE,
+        fileEncoding = "UTF-8"
+      )
+    }
+  )
+  
   # --- F. Logique pour l'onglet 'Analyse Exploratoire' ---
   
-  # 1. Histogramme
-  output$plot_histogram <- renderPlot({
-    
+  # --- GRAPHIQUE 5 : Histogramme ---
+  
+  # 1. Isoler le code du graphique
+  reactive_plot_hist <- reactive({
     data_plot <- data_filtered()
     
-    # Sécurité : Gérer le cas où il n'y a pas de données
     if (nrow(data_plot) == 0) {
       return(ggplot() + labs(title = "Pas de données pour cette sélection"))
     }
     
     ggplot(data_plot, aes(x = conso_m2_total)) +
-      # geom_histogram est le graphique "histogramme"
       geom_histogram(aes(y = ..density..), bins = 30, fill = "#0072B2", color = "white", alpha = 0.7) +
-      geom_density(color = "red", size = 1) + # Ajoute une ligne de densité
+      geom_density(color = "red", size = 1) + 
       facet_wrap(~ Ville, scales = "free_y") +
       labs(
         title = "Distribution du Coût total au m² (Logements Existants)",
@@ -584,9 +660,23 @@ server <- function(input, output, session) {
       theme_minimal()
   })
   
-  # 2. Boîte à moustaches
-  output$plot_boxplot <- renderPlot({
-    
+  # 2. Le renderPlot appelle le reactive
+  output$plot_histogram <- renderPlot({
+    reactive_plot_hist()
+  })
+  
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_5 <- downloadHandler(
+    filename = function() { "distribution_cout_m2.png" },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_hist(), device = "png", width = 10, height = 6)
+    }
+  )
+  
+  # --- GRAPHIQUE 6 : Boîte à moustaches ---
+  
+  # 1. Isoler le code du graphique
+  reactive_plot_box <- reactive({
     data_plot <- data_filtered() %>% filter(flag == "existant")
     
     if (nrow(data_plot) == 0) {
@@ -594,9 +684,8 @@ server <- function(input, output, session) {
     }
     
     ggplot(data_plot, aes(x = etiquette_dpe, y = conso_m2_total, fill = etiquette_dpe)) +
-      # geom_boxplot est le graphique "boîte à moustaches"
       geom_boxplot() +
-      scale_y_log10(labels = scales::dollar_format(suffix = "€")) + # Axe Y en log pour la lisibilité
+      scale_y_log10(labels = scales::dollar_format(suffix = "€")) + 
       facet_wrap(~ Ville) +
       labs(
         title = "Distribution du Coût total au m² par DPE (Logements Existants)",
@@ -604,13 +693,27 @@ server <- function(input, output, session) {
         y = "Coût Moyen par m² (log10)"
       ) +
       theme_minimal() +
-      theme(legend.position = "none") # Pas besoin de légende si l'axe X est clair
+      theme(legend.position = "none") 
   })
   
-  # 3. Nuage de points
-  output$plot_scatter <- renderPlot({
-    
-    # On utilise data_map() qui est DÉJÀ ÉCHANTILLONNÉ (très important pour la performance)
+  # 2. Le renderPlot appelle le reactive
+  output$plot_boxplot <- renderPlot({
+    reactive_plot_box()
+  })
+  
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_6 <- downloadHandler(
+    filename = function() { "boxplot_cout_dpe.png" },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_box(), device = "png", width = 10, height = 6)
+    }
+  )
+  
+  # --- GRAPHIQUE 7 : Nuage de points ---
+  
+  # 1. Isoler le code du graphique
+  reactive_plot_scatter <- reactive({
+    # On utilise data_map() qui est DÉJÀ ÉCHANTILLONNÉ
     data_plot <- data_map()
     
     if (nrow(data_plot) == 0) {
@@ -618,12 +721,8 @@ server <- function(input, output, session) {
     }
     
     ggplot(data_plot, aes(x = surface_habitable_logement, y = cout_total_5_usages, color = etiquette_dpe)) +
-      # geom_point est le graphique "nuage de points"
       geom_point(alpha = 0.5) +
-      
-      # On utilise la même palette de couleurs que la carte
       scale_color_manual(values = dpe_colors, name = "DPE") +
-      
       scale_y_log10(labels = scales::dollar_format(suffix = "€")) +
       facet_wrap(~ Ville) +
       labs(
@@ -632,8 +731,21 @@ server <- function(input, output, session) {
         y = "Coût Total 5 Usages (log10)"
       ) +
       theme_minimal() +
-      guides(color = guide_legend(override.aes = list(alpha = 1, size = 5))) # Rendre la légende visible
+      guides(color = guide_legend(override.aes = list(alpha = 1, size = 5)))
   })
+  
+  # 2. Le renderPlot appelle le reactive
+  output$plot_scatter <- renderPlot({
+    reactive_plot_scatter()
+  })
+  
+  # 3. Le downloadHandler appelle le MÊME reactive
+  output$download_graph_7 <- downloadHandler(
+    filename = function() { "scatter_surface_cout.png" },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_scatter(), device = "png", width = 12, height = 7)
+    }
+  )
   
 }
 # --- 5. LANCEMENT DE L'APPLICATION ---
