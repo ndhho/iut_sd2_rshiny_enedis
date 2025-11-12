@@ -9,6 +9,14 @@ library(leaflet) # Pour la carte interactive
 library(DT)      # Pour afficher des tables (bonus)
 library(sf)
 library(shinythemes)
+library(shinymanager)
+
+
+credentials <- data.frame(
+  user = c("admin"),
+  password = c("admin"),
+  stringsAsFactors = FALSE
+)
 
 # --- 2. PRÉPARATION DES DONNÉES (GLOBAL) ---
 print("Chargement des librairies... OK")
@@ -75,7 +83,8 @@ print("Préparation des données terminée. Lancement de l'application.")
 
 
 # --- 3. DÉFINITION DE L'INTERFACE UTILISATEUR (UI) ---
-ui <- dashboardPage(
+ui <- secure_app(
+  dashboardPage(
   
   dashboardHeader(title = "Analyse DPE 59/69"),
   
@@ -287,10 +296,15 @@ ui <- dashboardPage(
     )
   )
 )
-
+)
 
 # --- 4. DÉFINITION DU SERVEUR (LOGIQUE) ---
 server <- function(input, output, session) {
+  
+  # Sécurisation du serveur
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
+  )
   
   # --- A. Données Réactives ---
   # Créer un dataframe réactif qui se met à jour en fonction des filtres
