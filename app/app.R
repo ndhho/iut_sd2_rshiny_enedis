@@ -113,6 +113,9 @@ ui <- dashboardPage(
   # --- CORPS DE L'APPLICATION (BODY) ---
   dashboardBody(
     
+    tags$head(
+      tags$link(rel = "stylesheet", type = "text/css", href = "style.css")),
+    
     themeSelector(),
     
     tabItems(
@@ -138,7 +141,7 @@ ui <- dashboardPage(
                       "Télécharger la sélection du tableau (.csv)"
                     )
                 ),
-                box(title = "Partenaires et Remerciements", width = 12, status = "info",
+                box(title = "Partenaires", width = 12, status = "info",
                     
                     # Nous utilisons du CSS simple pour centrer et espacer les logos
                     tags$div(
@@ -238,6 +241,46 @@ ui <- dashboardPage(
                 box(title = "Nuage de points : Surface vs Coût total", width = 12, status = "primary", solidHeader = TRUE,
                     plotOutput("plot_scatter"),
                     footer = downloadButton("download_graph_7", "Exporter en .png")
+                )
+              ),
+              fluidRow(
+                
+                # Boîte de contrôle pour la sélection X/Y
+                box(title = "Analyse de Corrélation (X vs Y)", width = 4, status = "warning", solidHeader = TRUE,
+                    
+                    # Définir les choix de variables numériques
+                    selectInput("var_x", "Choisir la variable X:",
+                                choices = c(
+                                  "Surface Habitable" = "surface_habitable_logement",
+                                  "Coût Total (5 usages)" = "cout_total_5_usages",
+                                  "Coût du Chauffage" = "cout_chauffage",
+                                  "Coût Total au m²" = "conso_m2_total",
+                                  "Coût Chauffage au m²" = "conso_m2_chauffage"
+                                ),
+                                selected = "surface_habitable_logement"),
+                    
+                    selectInput("var_y", "Choisir la variable Y:",
+                                choices = c(
+                                  "Surface Habitable" = "surface_habitable_logement",
+                                  "Coût Total (5 usages)" = "cout_total_5_usages",
+                                  "Coût du Chauffage" = "cout_chauffage",
+                                  "Coût Total au m²" = "conso_m2_total",
+                                  "Coût Chauffage au m²" = "conso_m2_chauffage"
+                                ),
+                                selected = "cout_total_5_usages"),
+                    
+                    hr(),
+                    h4("Coefficient de Corrélation (r) :"),
+                    # Sortie pour le calcul de corrélation
+                    verbatimTextOutput("text_correlation")
+                ),
+                
+                # Boîte pour le graphique de régression
+                box(title = "Nuage de points et Droite de Régression", width = 8, status = "primary", solidHeader = TRUE,
+                    plotOutput("plot_regression"),
+                    
+                    # Ajout du bouton d'export pour ce nouveau graphique
+                    footer = downloadButton("download_graph_8", "Exporter en .png")
                 )
               )
       )
@@ -744,6 +787,65 @@ server <- function(input, output, session) {
     filename = function() { "scatter_surface_cout.png" },
     content = function(file) {
       ggsave(file, plot = reactive_plot_scatter(), device = "png", width = 12, height = 7)
+    }
+  )
+  
+  # --- G. Logique pour la Régression Linéaire (Onglet 5) ---
+  
+  # 1. Isoler le code du graphique de régression
+  reactive_plot_regression <- reactive({
+    
+    # On utilise data_map() qui est DÉJÀ ÉCHANTILLONNÉ (rapide)
+    data_plot <- data_map()
+    
+    # Vérifier que les inputs sont valides
+    req(input$var_x, input$var_y, nrow(data_plot) > 0)
+    
+    # Créer le nuage de points
+    ggplot(data_plot, aes(x = .data[[input$var_x]], y = .data[[input$var_y]])) +
+      
+      # geom_point = nuage de points
+      geom_point(alpha = 0.4, color = "blue") +
+      
+      # geom_smooth = droite de régression
+      geom_smooth(method = "lm", color = "red", se = FALSE) + # 'se=FALSE' enlève l'intervalle de confiance
+      
+      labs(
+        title = paste("Régression :", input$var_y, "en fonction de", input$var_x),
+        subtitle = paste("Basé sur un échantillon de", nrow(data_plot), "logements"),
+        x = input$var_x,
+        y = input$var_y
+      ) +
+      theme_minimal()
+  })
+  
+  # 2. Rendu du graphique
+  output$plot_regression <- renderPlot({
+    reactive_plot_regression()
+  })
+  
+  # 3. Rendu du texte de corrélation
+  output$text_correlation <- renderText({
+    
+    data_plot <- data_map()
+    req(input$var_x, input$var_y, nrow(data_plot) > 2) # Besoin d'au moins 2 points
+    
+    # Calculer la corrélation
+    correlation <- cor(
+      data_plot[[input$var_x]], 
+      data_plot[[input$var_y]],
+      use = "complete.obs" # Gérer les NA
+    )
+    
+    # Retourner le texte
+    paste("r =", round(correlation, 4))
+  })
+  
+  # 4. Le downloadHandler pour le graphique de régression
+  output$download_graph_8 <- downloadHandler(
+    filename = function() { paste0("regression_", input$var_x, "_vs_", input$var_y, ".png") },
+    content = function(file) {
+      ggsave(file, plot = reactive_plot_regression(), device = "png", width = 10, height = 7)
     }
   )
   

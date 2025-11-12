@@ -1,0 +1,52 @@
+.skin-blue .main-header .navbar {
+  background-color: #005DB9;
+}
+.skin-blue .main-header .logo {
+  background-color: #004B9A;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+.skin-blue .main-header .logo:hover {
+  background-color: #003A75;
+}
+.skin-blue .main-sidebar {
+  background-color: #2F2F2F;
+}
+.skin-blue .main-sidebar .sidebar .sidebar-menu .active a {
+  background-color: #222222;
+  border-left-color: #92C814;
+}
+.skin-blue .main-sidebar .sidebar .sidebar-menu a:hover {
+  background-color: #3e3e3e;
+  border-left-color: #005DB9;
+}
+.box.box-solid.box-primary > .box-header {
+  background: #005DB9;
+  border-color: #005DB9;
+}
+.box.box-solid.box-info > .box-header {
+  background: #9E9E9E;
+  border-color: #9E9E9E;
+}
+.box.box-solid.box-warning > .box-header {
+  background: #92C814;
+  border-color: #92C814;
+  color: #2F2F2F;
+}
+.small-box.bg-blue {
+  background-color: #005DB9 !important;
+}
+.small-box.bg-green {
+  background-color: #92C814 !important;
+  color: #2F2F2F !important;
+}
+#shiny-theme-selector.btn {
+  height: 30px;
+  padding: 5px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#shiny-theme-selector .dropdown-menu {
+  min-width: 100px;
+  font-size: 12px;
+}
