@@ -699,10 +699,27 @@ server <- function(input, output, session) {
   
   # 1. Isoler le code du graphique
   reactive_plot_hist <- reactive({
-    data_plot <- data_filtered()
     
-    if (nrow(data_plot) == 0) {
+    # Récupérer les données filtrées par l'utilisateur
+    data_plot_initial <- data_filtered()
+    
+    if (nrow(data_plot_initial) == 0) {
       return(ggplot() + labs(title = "Pas de données pour cette sélection"))
+    }
+    
+    # --- AJOUT DE LA CORRECTION ---
+    # 1. Calculer une limite supérieure (le 99ème percentile)
+    limite_sup <- quantile(data_plot_initial$conso_m2_total, 0.99, na.rm = TRUE)
+    
+    # 2. Filtrer les données pour ne garder que 99% des logements
+    data_plot <- data_plot_initial %>%
+      filter(conso_m2_total <= limite_sup)
+    # --- FIN DE LA CORRECTION ---
+    
+    
+    # Gérer le cas où même les données filtrées sont vides
+    if (nrow(data_plot) == 0) {
+      return(ggplot() + labs(title = "Pas de données après filtrage des outliers"))
     }
     
     ggplot(data_plot, aes(x = conso_m2_total)) +
@@ -710,19 +727,19 @@ server <- function(input, output, session) {
       geom_density(color = "red", size = 1) + 
       facet_wrap(~ Ville, scales = "free_y") +
       labs(
-        title = "Distribution du Coût total au m² (Logements Existants)",
+        title = "Distribution du Coût total au m² (99% des logements)", # Titre mis à jour
         x = "Coût Moyen par m² (€/m²)",
         y = "Densité"
       ) +
       theme_minimal()
   })
   
-  # 2. Le renderPlot appelle le reactive
+  # 2. Le renderPlot (inchangé)
   output$plot_histogram <- renderPlot({
     reactive_plot_hist()
   })
   
-  # 3. Le downloadHandler appelle le MÊME reactive
+  # 3. Le downloadHandler (inchangé)
   output$download_graph_5 <- downloadHandler(
     filename = function() { "distribution_cout_m2.png" },
     content = function(file) {
@@ -740,12 +757,31 @@ server <- function(input, output, session) {
       return(ggplot() + labs(title = "Pas de données pour cette sélection"))
     }
     
+    # --- AJOUT DE LA CORRECTION ---
+    # 1. Calculer une limite supérieure (le 98ème percentile) pour le zoom
+    #    On utilise 98% car les boxplots ont beaucoup d'outliers
+    limite_sup <- quantile(data_plot$conso_m2_total, 0.98, na.rm = TRUE)
+    
+    # 2. Définir une limite inférieure (ex: 1 €/m²)
+    limite_inf <- 1
+    # --- FIN DE LA CORRECTION ---
+    
     ggplot(data_plot, aes(x = etiquette_dpe, y = conso_m2_total, fill = etiquette_dpe)) +
       geom_boxplot() +
+      
+      # On continue d'utiliser l'échelle log
       scale_y_log10(labels = scales::dollar_format(suffix = "€")) + 
+      
+      # --- AJOUT DU ZOOM ---
+      # On zoome entre 1€ et la limite supérieure (98ème percentile)
+      # coord_cartesian zoome SANS supprimer les données pour le calcul
+      coord_cartesian(ylim = c(limite_inf, limite_sup)) +
+      # --- FIN DE L'AJOUT ---
+      
       facet_wrap(~ Ville) +
       labs(
         title = "Distribution du Coût total au m² par DPE (Logements Existants)",
+        subtitle = "Zoom sur les 98% des données les moins chères", # Ajout d'un sous-titre
         x = "Classe DPE",
         y = "Coût Moyen par m² (log10)"
       ) +
@@ -753,12 +789,12 @@ server <- function(input, output, session) {
       theme(legend.position = "none") 
   })
   
-  # 2. Le renderPlot appelle le reactive
+  # 2. Le renderPlot (inchangé)
   output$plot_boxplot <- renderPlot({
     reactive_plot_box()
   })
   
-  # 3. Le downloadHandler appelle le MÊME reactive
+  # 3. Le downloadHandler (inchangé)
   output$download_graph_6 <- downloadHandler(
     filename = function() { "boxplot_cout_dpe.png" },
     content = function(file) {
