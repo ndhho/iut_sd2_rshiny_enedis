@@ -37,8 +37,8 @@ Voici les étapes pour installer et lancer l'application sur un poste local.
 
 ### 3.1. Prérequis
 
-  * **R** (version 4.0 ou supérieure).
-  * **RStudio** (recommandé).
+* **R** (version 4.0 ou supérieure) : [Télécharger R depuis le CRAN](https://cran.r-project.org/)
+* **RStudio** (recommandé) : [Télécharger RStudio Desktop (gratuit)](https://posit.co/download/rstudio-desktop/)
 
 ### 3.2. Installation des packages
 
