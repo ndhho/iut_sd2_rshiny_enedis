@@ -21,7 +21,7 @@ credentials = data.frame(
   stringsAsFactors = FALSE
 )
 
-# --- PREPARATION DES DONNÉES  ---
+# --- PREPARATION DES DONNEES  ---
 print("Chargement des librairies... OK")
 
 # Importer les deux jeux de données

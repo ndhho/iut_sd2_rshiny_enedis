@@ -45,16 +45,21 @@ Ce dépôt contient plusieurs dossiers clés pour comprendre le projet. Pour une
 
 Pour lancer l'application sur votre machine :
 
-1.  **Cloner le dépôt :**
-    ```bash
-    git clone [https://github.com/ndhho/iut_sd2_rshiny_enedis.git](https://github.com/ndhho/iut_sd2_rshiny_enedis.git)
-    cd iut_sd2_rshiny_enedis
-    ```
+1.  **Télécharger le projet :**
+
+      * Allez sur la page principale du dépôt [GitHub](https://github.com/ndhho/iut_sd2_rshiny_enedis)
+      * Cliquez sur le bouton vert **`< > Code`** et sélectionnez **"Download ZIP"**.
+      * Décompressez le fichier `.zip` sur votre ordinateur.
 
 2.  **Installer les packages :**
-    Ouvrez RStudio et installez les dépendances (listées dans `/docs/technical_doc.md`).
 
-3.  **Lancer l'application :**
-    Ouvrez le fichier `app/app.R` et cliquez sur **"Run App"**.
+      * Ouvrez RStudio.
+      * Installez les dépendances (listées dans la [Documentation Technique](https://www.google.com/search?q=./docs/technical_doc.html)) en copiant leur `install.packages(...)` dans la console R.
 
-Pour des instructions d'installation détaillées, veuillez consulter la [Documentation Technique](/docs/technical_doc.md).
+3.  **Lancer l’application :**
+
+      * Dans RStudio, naviguez (`File > Open File...`) et ouvrez le fichier `app/app.R` qui se trouve dans le dossier que vous venez de décompresser.
+      * Cliquez sur le bouton **"Run App"** en haut à droite de l'éditeur.
+      * Utilisez les identifiants `admin` / `admin` pour vous connecter.
+
+Pour des instructions d'installation plus détaillées veuillez consulter la **[Documentation Technique](https://www.google.com/search?q=./docs/technical_doc.html)**.
