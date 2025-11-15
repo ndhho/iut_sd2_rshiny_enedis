@@ -119,7 +119,7 @@ ui = secure_app(
       sliderInput("surface_filter", "Filtrer par surface (m2):",
                   min = 10, max = 500,
                   value = c(10, 500)),
-      numericInput("sample_size", "Nombre de données échantillonnées (max 5000):",
+      numericInput("sample_size", "Nombre de données échantillonnées (max 4971):",
                    value = 1000, min = 100, max = 5000, step = 100)
       
     ),
@@ -337,7 +337,7 @@ server = function(input, output, session) {
   # --- Rendu des KPIs ---
   
   output$kpi_logements = renderValueBox({
-    nb_logements = nrow(data_filtered())
+    nb_logements = nrow(data_map())
     valueBox(
       value = prettyNum(nb_logements, big.mark = " "),
       subtitle = "Logements dans la sélection",
@@ -347,10 +347,10 @@ server = function(input, output, session) {
   })
   
   output$kpi_passoires = renderValueBox({
-    passoires = data_filtered() %>%
+    passoires = data_map() %>%
       filter(etiquette_dpe %in% c("F", "G")) %>%
       nrow()
-    total = nrow(data_filtered())
+    total = nrow(data_map())
     taux = if(total > 0) (passoires / total) else 0
     
     valueBox(
@@ -362,7 +362,7 @@ server = function(input, output, session) {
   })
   
   output$kpi_cout_m2_total = renderValueBox({
-    cout_moyen = data_filtered() %>%
+    cout_moyen = data_map() %>%
       summarise(moy = mean(conso_m2_total, na.rm = TRUE)) %>%
       pull(moy)
     
