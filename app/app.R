@@ -33,9 +33,14 @@ print("Données brutes chargées.")
 # Combiner les données brutes
 data_combined_raw = rbind(data_lyon, data_lille)
 
+# Echantillon données pour la carte interactive
+set.seed(123) 
+data_sampled = data_combined_raw %>% 
+  sample_n(5000)
+
 # Conversion des coordonnées
-print("Démarrage de la conversion des coordonnées (~1min)...")
-data_with_coords = data_combined_raw %>%
+print("Démarrage de la conversion des coordonnées (sur échantillon)...")
+data_with_coords = data_sampled %>% # <-- ON UTILISE data_sampled ICI
   # S'assurer que les coordonnées sont numériques
   mutate(
     coordonnee_cartographique_x_ban = as.numeric(coordonnee_cartographique_x_ban),
@@ -114,7 +119,7 @@ ui = secure_app(
       sliderInput("surface_filter", "Filtrer par surface (m2):",
                   min = 10, max = 500,
                   value = c(10, 500)),
-      numericInput("sample_size", "Nb. de points sur la carte (max 5000):",
+      numericInput("sample_size", "Nombre de données échantillonnées (max 5000):",
                    value = 1000, min = 100, max = 5000, step = 100)
       
     ),

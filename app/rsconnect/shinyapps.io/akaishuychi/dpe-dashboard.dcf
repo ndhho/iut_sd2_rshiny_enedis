@@ -1,0 +1,10 @@
+name: dpe-dashboard
+title:
+username: akaishuychi
+account: akaishuychi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16046883
+bundleId: 11169781
+url: https://akaishuychi.shinyapps.io/dpe-dashboard/
+version: 1
