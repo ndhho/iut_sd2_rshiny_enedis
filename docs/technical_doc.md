@@ -1,53 +1,35 @@
------
-
-### `Technical Documentation`
-
-````markdown
 # Documentation Technique : Analyse DPE Lyon vs Lille
 
 Ce document détaille l'architecture technique, les dépendances et la procédure d'installation de l'application Shiny d'analyse des DPE.
 
 ## 1. Schéma de l'architecture
 
-L'application repose sur une architecture "gated" (à accès contrôlé) où la logique principale du serveur n'est chargée qu'après une authentification réussie. Les données sont chargées au démarrage depuis des sources externes (GitHub), et les coordonnées sont converties une seule fois.
+Le schéma ci-dessous présente l’architecture globale de l’application. Il illustre le cheminement complet des données, depuis leur récupération dans les sources externes jusqu’à leur exploitation dans l’interface Shiny. 
+On y voit les différentes étapes de transformation (chargement, nettoyage, fusion, conversion), ainsi que la structure logique de l’application elle-même (serveur, interface utilisateur, modules d’affichage). 
+L’objectif est de fournir une vision d’ensemble du fonctionnement interne afin de mieux comprendre comment les données alimentent les tableaux de bord, graphiques et cartes interactives.
 
-Le schéma ci-dessous illustre le flux d'interaction entre l'utilisateur, l'interface (UI), le serveur (Server) et les sources de données :
+![](./schema_architecture.png)
 
-```mermaid
-graph TD
-    subgraph "Utilisateur (Navigateur)"
-        A[Interface UI - Connexion] -- Identifiants --> S(Serveur)
-        B[Interface UI - Dashboard] <--> S
-        C[Filtres (Inputs)] --> S
-        S -- Met à jour --> D[Graphiques (Outputs)]
-        S -- Met à jour --> E[Carte (Outputs)]
-    end
-    
-    subgraph "Serveur (app.R)"
-        S -- 1. Authentifie --> S1[Logique de Connexion]
-        S -- 2. Exécute --> S2[Logique Applicative]
-        S2 -- Lit --> F[Données (data_combined)]
-    end
-    
-    subgraph "Source de Données (Externe)"
-        G[CSV Lyon sur GitHub] --> F
-        H[CSV Lille sur GitHub] --> F
-    end
-````
-
-## 2\. Packages Nécessaires
+## 2. Packages Nécessaires
 
 L'application repose sur les 9 packages R suivants :
 
-  * **shiny** : Framework principal de l'application.
-  * **shinydashboard** : Structure le tableau de bord (header, sidebar, body).
-  * **dplyr** : Utilise pour toutes les manipulations de données (filtres, `group_by`, `summarise`).
-  * **ggplot2** : Moteur de génération pour tous les graphiques (histogrammes, barres, nuages de points...).
-  * **scales** : Permet de formater les axes et les étiquettes (ex: `percent()`).
-  * **leaflet** : Génère la carte interactive (points, légendes, popups).
-  * **DT** : Affiche les tables de données interactives (onglet "Contexte").
-  * **sf** : Requis pour la conversion des coordonnées géographiques (Lambert-93 vers WGS84).
-  * **shinythemes** : Permet le changement de thème par l'utilisateur.
+* **shiny** : Framework principal de l'application.
+* **shinydashboard** : Structure le tableau de bord (header, sidebar, body).
+* **dplyr** : Utilise pour toutes les manipulations de données (`filtres`, `group_by`, `summarise`).
+* **ggplot2** : Moteur de génération pour tous les graphiques (`histogrammes`, `barres`, `nuages de points`...).
+* **scales** : Permet de formater les axes et les étiquettes (ex: `percent()`).
+* **leaflet** : Génère la carte interactive (`points`, `légendes`, `popups`).
+* **DT** : Affiche les tables de données interactives (onglet "Contexte").
+* **sf** : Requis pour la conversion des coordonnées géographiques (Lambert-93 vers WGS84).
+* **shinythemes** : Permet le changement de thème par l'utilisateur.
+* **rsconnect** : Requis pour le déploiement de l'application sur shinyapps.io
+
+Absolument. Vous avez raison, maintenant que le projet est sur GitHub, la section 3.3 est obsolète.
+
+Voici la section 3 mise à jour. J'ai entièrement réécrit la partie "Lancement de l'application" pour qu'elle corresponde à un clonage ou un téléchargement depuis GitHub.
+
+-----
 
 ## 3\. Guide d'installation
 
@@ -68,47 +50,22 @@ Voici les étapes pour installer et lancer l'application sur un poste local.
                        "shinythemes"))
     ```
 
-2.  **Note importante pour `sf`** : Ce package peut avoir des dépendances système (comme `GDAL` ou `GEOS`). Si l'installation échoue, suivez les instructions spécifiques à votre système d'exploitation (Windows, macOS, ou Linux) disponibles sur [la page du package `sf`](https://www.google.com/search?q=https://r-spatial.github.io/sf/%23installing).
-
 ### 3.3. Lancement de l'application
 
-1.  Créez un nouveau dossier pour votre projet (ex: `MonProjetShiny`).
+L'intégralité du code, y compris le script `app.R` et le dossier `www/`, se trouve dans le dossier `app/` de ce dépôt GitHub.
 
-2.  À l'intérieur de ce dossier, créez un fichier nommé `app.R` et copiez-y l'intégralité du script de l'application.
+**Téléchargement (ZIP)**
 
-3.  Dans ce même dossier, créez un sous-dossier nommé **`www`**.
+1.  Sur la page principale du dépôt GitHub, cliquez sur le bouton vert **`< > Code`**.
+2.  Sélectionnez **"Download ZIP"**.
+3.  Décompressez le fichier `.zip` sur votre ordinateur.
+4.  Ouvrez RStudio.
+5.  Dans RStudio, naviguez (`File > Open File...`) et ouvrez le fichier `app.R` situé dans le dossier `[nom-du-dossier-dezippé]/app/app.R`.
+6.  Cliquez sur le bouton **"Run App"** en haut à droite de l'éditeur de script.
 
-4.  À l'intérieur du dossier `www`, créez un fichier nommé **`style.css`**.
-
-5.  Copiez le code CSS suivant dans `www/style.css` (Ceci est la charte graphique Enedis) :
-
-    ```css
-    /* --- Charte Visuelle "ENEDIS" --- */
-    .skin-blue .main-header .navbar { background-color: #005DB9; }
-    .skin-blue .main-header .logo { background-color: #004B9A; color: #FFFFFF; font-weight: bold; }
-    .skin-blue .main-header .logo:hover { background-color: #003A75; }
-    .skin-blue .main-sidebar { background-color: #2F2F2F; }
-    .skin-blue .main-sidebar .sidebar .sidebar-menu .active a { background-color: #222222; border-left-color: #92C814; }
-    .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover { background-color: #3e3e3e; border-left-color: #005DB9; }
-    .box.box-solid.box-primary > .box-header { background: #005DB9; border-color: #005DB9; }
-    .box.box-solid.box-info > .box-header { background: #9E9E9E; border-color: #9E9E9E; }
-    .box.box-solid.box-warning > .box-header { background: #92C814; border-color: #92C814; color: #2F2F2F; }
-    .small-box.bg-blue { background-color: #005DB9 !important; }
-    .small-box.bg-green { background-color: #92C814 !important; color: #2F2F2F !important; }
-    ```
-
-6.  Ouvrez le fichier `app.R` dans RStudio.
-
-7.  Cliquez sur le bouton **"Run App"** en haut à droite de l'éditeur de script.
-
-8.  L'application se lancera et vous présentera l'écran de connexion.
+L'application se lancera et vous présentera l'écran de connexion.
 
 ### 3.4. Identifiants de connexion
 
   * **Utilisateur :** `admin`
   * **Mot de passe :** `admin`
-
-<!-- end list -->
-
-```
-```
