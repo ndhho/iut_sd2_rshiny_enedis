@@ -24,21 +24,16 @@ Vous pouvez accéder à l'application déployée ici :
 
 Ce dépôt contient plusieurs dossiers clés pour comprendre le projet. Pour une explication détaillée de l’application, veuillez consulter les documentations dédiées :
 
-  * **[Documentation Technique](https://www.google.com/search?q=./docs/technical_doc.html)**
-  * **[Documentation Fonctionnelle](https://www.google.com/search?q=./docs/functional_doc.html)**
-
-*(Assurez-vous que vous avez bien exporté vos fichiers `.md` en `.html` et qu'ils sont présents dans le dossier `/docs` de votre dépôt.)*
-
 * **`/app/`**
     Contient le code source final de l'application Shiny (`app.R`) ainsi que les assets visuels (`www/`) et les fichiers de déploiement (`rsconnect/`).
 
 * **`/docs/`**
     **C'est ici que se trouve la documentation complète du projet.**
-    * `technical_doc.md` : **Documentation Technique.** Contient le guide d'installation, l'architecture et la liste des packages.
-    * `Documentation_Fonctionnelle.md` : **Documentation Fonctionnelle.** Explique l'intérêt de chaque page et fonctionnalité de l'application.
+    * **[technical_doc.md](https://github.com/ndhho/iut_sd2_rshiny_enedis/blob/main/docs/technical_doc.md)** :  Contient le guide d'installation, l'architecture et la liste des packages.
+    * **[functional_doc.md](https://github.com/ndhho/iut_sd2_rshiny_enedis/blob/main/docs/functional_doc.md)** : Explique l'intérêt de chaque page et fonctionnalité de l'application.
 
 * **`/rapport/`**
-    Contient l'analyse statistique initiale (`rapport_statistique_v2.Rmd`) qui a servi de base à la création du dashboard.
+    Contient l'analyse statistique initiale (`rapport_statistique.Rmd`) qui a servi de base à la création du dashboard.
 
 * **`/data_preparation/`**
     Contient les scripts R (ex: `extraction_api.R`) utilisés pour le nettoyage initial et la préparation des données.
