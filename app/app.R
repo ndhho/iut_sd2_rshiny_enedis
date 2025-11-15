@@ -20,7 +20,7 @@ credentials = data.frame(
   stringsAsFactors = FALSE
 )
 
-# --- PRÉPARATION DES DONNÉES  ---
+# --- PREPARATION DES DONNÉES  ---
 print("Chargement des librairies... OK")
 
 # Importer les deux jeux de données
@@ -33,14 +33,14 @@ print("Données brutes chargées.")
 # Combiner les données brutes
 data_combined_raw = rbind(data_lyon, data_lille)
 
-# Echantillon données pour la carte interactive
+# Echantillon données pour l'application
 set.seed(123) 
 data_sampled = data_combined_raw %>% 
   sample_n(5000)
 
-# Conversion des coordonnées
+# Conversion des coordonnées pour la carte
 print("Démarrage de la conversion des coordonnées (sur échantillon)...")
-data_with_coords = data_sampled %>% # <-- ON UTILISE data_sampled ICI
+data_with_coords = data_sampled %>%
   # S'assurer que les coordonnées sont numériques
   mutate(
     coordonnee_cartographique_x_ban = as.numeric(coordonnee_cartographique_x_ban),
@@ -50,20 +50,20 @@ data_with_coords = data_sampled %>% # <-- ON UTILISE data_sampled ICI
     !is.na(coordonnee_cartographique_x_ban), 
     !is.na(coordonnee_cartographique_y_ban)
   ) %>%
-  # 1. Convertir en objet spatial 'sf' (CRS source = Lambert-93 = 2154)
+  # Convertir en objet spatial 'sf' (CRS source = Lambert-93 = 2154)
   st_as_sf(
     coords = c("coordonnee_cartographique_x_ban", "coordonnee_cartographique_y_ban"),
     crs = 2154, 
     remove = FALSE 
   ) %>%
-  # 2. Transformer vers le CRS de Leaflet (WGS84 = 4326)
+  # Transformer vers le CRS de Leaflet (WGS84 = 4326)
   st_transform(crs = 4326) %>%
-  # 3. Extraire la latitude et la longitude
+  # Extraire la latitude et la longitude
   mutate(
     lon = st_coordinates(.)[,1],
     lat = st_coordinates(.)[,2]
   ) %>%
-  # 4. Revenir à un data.frame normal
+  # Revenir à un data.frame normal
   st_drop_geometry()
 
 print("Conversion des coordonnées terminée.")
