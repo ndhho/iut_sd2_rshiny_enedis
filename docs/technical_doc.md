@@ -1,60 +1,43 @@
----
-title: "Documentation technique de l’application en markdown"
-author: "HO Huy, TRAN Cloelia"
-date: "`r Sys.Date()`"
-output: html_document
----
+-----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+### `Technical Documentation`
 
+````markdown
 # Documentation Technique : Analyse DPE Lyon vs Lille
 
-Ce document détaille l'architecture technique et la procédure d'installation de l'application Shiny d'analyse des DPE.
+Ce document détaille l'architecture technique, les dépendances et la procédure d'installation de l'application Shiny d'analyse des DPE.
 
-## 1\. Schéma de l'architecture
+## 1. Schéma de l'architecture
 
-L'application repose sur une architecture "gated" (à accès contrôlé) où la logique principale du serveur n'est chargée qu'après une authentification réussie.
+L'application repose sur une architecture "gated" (à accès contrôlé) où la logique principale du serveur n'est chargée qu'après une authentification réussie. Les données sont chargées au démarrage depuis des sources externes (GitHub), et les coordonnées sont converties une seule fois.
 
-### 1.1. Flux des données
-
-Les données brutes sont hébergées sur GitHub et chargées au démarrage de l'application. Les coordonnées géographiques (Lambert-93) sont converties en WGS84 (Lat/Lon) une seule fois avant d'être utilisées par l'application.
+Le schéma ci-dessous illustre le flux d'interaction entre l'utilisateur, l'interface (UI), le serveur (Server) et les sources de données :
 
 ```mermaid
 graph TD
-    A(Utilisateur [Navigateur Web]) <--> B(Application Shiny [app.R])
-    B -- 1. Chargement au démarrage --> C(Source 1: logements_59.csv [GitHub])
-    B -- 2. Chargement au démarrage --> D(Source 2: logements_69.csv [GitHub])
-    B -- 3. Conversion SF --> E(Données Géospatiales [lat/lon])
-    B -- 4. Rendu HTML/JS --> A
-```
-
-### 1.2. Architecture de l'application (`app.R`)
-
-L'application utilise un `uiOutput` principal qui bascule entre deux interfaces utilisateur distinctes, en fonction d'une variable réactive `user_auth()`.
-
-```mermaid
-graph TD
-    subgraph "Serveur (server.R)"
-        S1(Logique de Connexion) -- Valide? --> S2(Authentification [user_auth(TRUE)])
-        S2 -- Déclenche --> S3(Chargement de la Logique Métier)
-        S3 --> S4(Filtres réactifs)
-        S3 --> S5(Rendu des Graphiques)
-        S3 --> S6(Rendu de la Carte)
+    subgraph "Utilisateur (Navigateur)"
+        A[Interface UI - Connexion] -- Identifiants --> S(Serveur)
+        B[Interface UI - Dashboard] <--> S
+        C[Filtres (Inputs)] --> S
+        S -- Met à jour --> D[Graphiques (Outputs)]
+        S -- Met à jour --> E[Carte (Outputs)]
     end
     
-    subgraph "Interface (ui.R)"
-        U0(uiOutput) -- Affiche --> U1(UI - Connexion)
-        U0 -- Affiche --> U2(UI - Dashboard Principal)
+    subgraph "Serveur (app.R)"
+        S -- 1. Authentifie --> S1[Logique de Connexion]
+        S -- 2. Exécute --> S2[Logique Applicative]
+        S2 -- Lit --> F[Données (data_combined)]
     end
     
-    S2 -- Bascule --> U0
-```
+    subgraph "Source de Données (Externe)"
+        G[CSV Lyon sur GitHub] --> F
+        H[CSV Lille sur GitHub] --> F
+    end
+````
 
 ## 2\. Packages Nécessaires
 
-L'application repose sur les 9 packages R suivants.
+L'application repose sur les 9 packages R suivants :
 
   * **shiny** : Framework principal de l'application.
   * **shinydashboard** : Structure le tableau de bord (header, sidebar, body).
@@ -80,10 +63,12 @@ Voici les étapes pour installer et lancer l'application sur un poste local.
 1.  Ouvrez RStudio et copiez-collez la commande suivante dans la console pour installer tous les packages requis :
 
     ```r
-    install.packages(c("shiny", "shinydashboard", "dplyr", "ggplot2", "scales", "leaflet", "DT", "sf", "shinythemes"))
+    install.packages(c("shiny", "shinydashboard", "dplyr", "ggplot2", 
+                       "scales", "leaflet", "DT", "sf", 
+                       "shinythemes"))
     ```
 
-2.  **Note importante pour `sf`** : Ce package peut avoir des dépendances système (comme `GDAL` ou `GEOS`). Si l'installation échoue, suivez les instructions spécifiques à votre système d'exploitation (Windows, macOS, ou Linux) disponibles sur [la page du package `sf`](https://www.google.com/search?q=%5Bhttps://r-spatial.github.io/sf/%23installing%5D\(https://r-spatial.github.io/sf/%23installing\)).
+2.  **Note importante pour `sf`** : Ce package peut avoir des dépendances système (comme `GDAL` ou `GEOS`). Si l'installation échoue, suivez les instructions spécifiques à votre système d'exploitation (Windows, macOS, ou Linux) disponibles sur [la page du package `sf`](https://www.google.com/search?q=https://r-spatial.github.io/sf/%23installing).
 
 ### 3.3. Lancement de l'application
 
@@ -122,3 +107,8 @@ Voici les étapes pour installer et lancer l'application sur un poste local.
 
   * **Utilisateur :** `admin`
   * **Mot de passe :** `admin`
+
+<!-- end list -->
+
+```
+```
