@@ -1,6 +1,6 @@
 # --- CHARGEMENT DES LIBRAIRIES ---
 # Lancez la lignes en dessous dans la console pour installer les packages nécessaires pour utiliser l'application
-#install.packages("shiny","shinydashboard","dplyr","ggplot2","scales","leaflet","DT","sf","shinythemes","shinymanager")
+#install.packages("shiny","shinydashboard","dplyr","ggplot2","scales","leaflet","DT","sf","shinythemes","shinymanager","rsconnect")
 library(shiny)
 library(shinydashboard)
 library(dplyr)
@@ -11,6 +11,7 @@ library(DT)      # Pour afficher des tables (bonus)
 library(sf)
 library(shinythemes)
 library(shinymanager)
+library(rsconnect)
 
 
 # user / password pour accéder à l’application
