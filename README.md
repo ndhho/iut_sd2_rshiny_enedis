@@ -20,6 +20,14 @@ Vous pouvez accéder à l'application déployée ici :
 
 ---
 
+## Démonstration Vidéo
+
+Une démonstration complète présentant les fonctionnalités majeures de l'application ainsi que le guide d'installation est disponible sur YouTube.
+
+**[Cliquez ici pour voir la vidéo de démonstration](https://youtu.be/S_RYEtk6jZY?si=jZB1g4ZQpEbLp2Z4)**
+
+---
+
 ## Navigation du Dépôt
 
 Ce dépôt contient plusieurs dossiers clés pour comprendre le projet. Pour une explication détaillée de l’application, veuillez consulter les documentations dédiées :
